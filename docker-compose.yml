@@ -1,0 +1,16 @@
+# pinned: the folder was renamed from Maki, and the data lives in the "maki" project volume
+name: maki
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: maki
+      POSTGRES_PASSWORD: maki
+      POSTGRES_DB: maki
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - maki_pgdata:/var/lib/postgresql/data
+volumes:
+  maki_pgdata:
