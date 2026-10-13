@@ -28,6 +28,8 @@
   --fg: 255 255 255;        /* overlay tint: rgb(var(--fg) / alpha) */
   --line: rgb(255 255 255 / .08);
   --scroll: #3a3a3a;
+  --hl-keyword: #ff7b72; --hl-title: #d2a8ff; --hl-number: #79c0ff; --hl-string: #a5d6ff;
+  --hl-builtin: #ffa657; --hl-comment: #8b949e; --hl-name: #7ee787;
 }
 
 /* light: notion light */
@@ -41,6 +43,8 @@
   --fg: 55 53 47;
   --line: rgb(55 53 47 / .1);
   --scroll: #d3d1cb;
+  --hl-keyword: #cf222e; --hl-title: #8250df; --hl-number: #0550ae; --hl-string: #0a3069;
+  --hl-builtin: #953800; --hl-comment: #6e7781; --hl-name: #116329;
 }
 
 /* card palette: --card is the surface, --ac the accent */
@@ -143,8 +147,9 @@ input, textarea { font: inherit; color: inherit; }
   .seg-btn:hover { color: var(--ink); }
   .me-btn:hover { background: rgb(var(--fg) / .06); }
   .task:hover { background: rgb(var(--fg) / .06); }
-  .task:hover .row-actions { opacity: 1; }
+  .task:hover .row-actions button { opacity: 1; }
   .card:hover .icon-btn { opacity: 1; }
+  .row-actions button.danger:hover, .icon-btn.danger:hover { background: var(--red); color: #fff; }
   .toggle:hover { background: rgb(var(--fg) / .1); color: var(--ink); }
   .check:hover .box { border-color: rgb(var(--fg) / .75); }
   .row-actions button:not(.danger):hover { background: rgb(var(--fg) / .12); color: var(--ink); }
@@ -158,6 +163,7 @@ input, textarea { font: inherit; color: inherit; }
   .chip:not(.on):hover { color: var(--ink); border-color: rgb(var(--fg) / .3); }
   .ref-picker li:hover { background: rgb(var(--fg) / .06); }
   .ref:hover { border-bottom-style: solid; }
+  .code-copy:hover { background: rgb(var(--fg) / .08); color: var(--ink); }
 }
 
 /* ───────── top bar ───────── */
@@ -260,6 +266,8 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 }
 .icon-btn { display: grid; place-items: center; padding: 5px; border-radius: 6px; opacity: 0; transition: opacity .15s, background-color .15s; }
 .icon-btn:focus-visible { opacity: 1; }
+/* delete buttons stay visible in a soft red and turn solid on hover; other row controls appear on hover */
+.icon-btn.danger { opacity: 1; background: rgb(212 68 58 / .18); color: var(--red-hover); }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 9px; padding: 2px 12px 12px; }
 .swatch {
@@ -328,10 +336,13 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .task.done .task-title { color: rgb(var(--fg) / .42); }
 .task.done .task-title > span { background-size: 100% 1.5px; }
 
-.row-actions { display: flex; gap: 3px; opacity: 0; transition: opacity .12s; }
-.task:focus-within .row-actions { opacity: 1; }
-.row-actions button { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 5px; color: rgb(var(--fg) / .7); }
-.row-actions button.danger { color: #fff; }
+.row-actions { display: flex; gap: 3px; }
+.row-actions button {
+  display: grid; place-items: center; width: 24px; height: 24px; border-radius: 5px; color: rgb(var(--fg) / .7);
+  opacity: 0; transition: opacity .12s, background-color .15s, color .15s;
+}
+.task:focus-within .row-actions button, .row-actions button.danger { opacity: 1; }
+.row-actions button.danger { background: rgb(212 68 58 / .18); color: var(--red-hover); }
 
 /* sub-tasks expand / collapse by animating the grid row */
 .kids { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
@@ -529,6 +540,30 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .md img { max-width: 100%; }
 .md .katex { font-size: 1.2em; }
 .math-block { margin: 0 0 1em; overflow-x: auto; overflow-y: hidden; }
+.note-tools { display: flex; gap: 2px; }
+
+/* code snippets: ```lang fences */
+.code-block { margin: 0 0 1em; border-radius: 8px; border: 1px solid var(--line); background: rgb(var(--fg) / .035); overflow: hidden; }
+.code-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 3px 4px 3px 12px; border-bottom: 1px solid var(--line);
+  font-size: 11px; font-stretch: var(--narrow); color: var(--muted);
+}
+.code-copy { padding: 3px 8px; border-radius: 5px; font-size: 11px; color: var(--muted); transition: background-color .15s, color .15s; }
+.md .code-block pre { margin: 0; padding: 12px 14px; border-radius: 0; background: none; }
+.md .code-block code { font-size: 13px; line-height: 1.6; font-stretch: var(--narrow); }
+.hljs-keyword, .hljs-doctag, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_ { color: var(--hl-keyword); }
+.hljs-title, .hljs-title.class_, .hljs-title.function_ { color: var(--hl-title); }
+.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-variable,
+.hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-section { color: var(--hl-number); }
+.hljs-regexp, .hljs-string, .hljs-meta .hljs-string { color: var(--hl-string); }
+.hljs-built_in, .hljs-symbol, .hljs-bullet { color: var(--hl-builtin); }
+.hljs-comment, .hljs-code, .hljs-formula { color: var(--hl-comment); font-style: italic; }
+.hljs-name, .hljs-quote, .hljs-selector-tag, .hljs-selector-pseudo { color: var(--hl-name); }
+.hljs-section, .hljs-strong { font-weight: 700; }
+.hljs-emphasis { font-style: italic; }
+.hljs-addition { color: var(--hl-name); }
+.hljs-deletion { color: var(--hl-keyword); }
 .md-empty { margin: 8px 0; }
 .ref { color: var(--blue); text-decoration: none; border-bottom: 1px dashed currentColor; }
 .md a.ref-lecture { color: var(--ac); }
@@ -578,9 +613,8 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 /* ───────── touch (iPhone / iPad): bigger targets, controls always visible ───────── */
 @media (pointer: coarse) {
   .task { min-height: 44px; }
-  .row-actions, .icon-btn { opacity: 1; }
+  .row-actions button, .icon-btn { opacity: 1; }
   .row-actions button { width: 34px; height: 34px; }
-  .row-actions button.danger, .icon-btn.danger { background: rgb(212 68 58 / .2); color: var(--red-hover); }
   .toggle { width: 28px; height: 28px; }
   .check { width: 22px; height: 22px; }
   .add-row { padding-top: 12px; padding-bottom: 12px; }
@@ -589,6 +623,7 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   .entry-item { padding: 12px 8px; }
   .chip { padding: 7px 12px; }
   .ref-picker li { padding: 10px 8px; }
+  .code-copy { padding: 6px 10px; }
   /* 16px stops iOS Safari from zooming in when an input is focused */
   input, textarea, .inline-input, .inline-input.seg-input, .field input, .text-input, .date-input { font-size: 16px; }
   .inline-input.group-edit { font-size: 19px; }

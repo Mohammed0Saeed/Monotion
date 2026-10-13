@@ -2,7 +2,7 @@ import {
   useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState,
   type KeyboardEvent, type MouseEvent,
 } from 'react'
-import { ArrowLeft, Download, Eye, FileDown, Link2, PenLine, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Code, Download, Eye, FileDown, Link2, PenLine, Plus, Trash2 } from 'lucide-react'
 import { api } from './api'
 import { renderMarkdown, type RefLookup } from './markdown'
 import { useSlidingPill } from './Segmented'
@@ -56,9 +56,38 @@ function caretXY(el: HTMLTextAreaElement, pos: number) {
   return xy
 }
 
+/** The clipboard API only exists on https and localhost; over plain http on the LAN fall back to a hidden textarea. */
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    const ta = Object.assign(document.createElement('textarea'), { value: text, readOnly: true })
+    Object.assign(ta.style, { position: 'fixed', opacity: '0' })
+    document.body.append(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    ta.remove()
+    return ok
+  }
+}
+
+/** inside a ``` code fence: an odd number of fence lines above the caret's line */
+const inFence = (text: string, pos: number) =>
+  (text.slice(0, text.lastIndexOf('\n', pos - 1) + 1).match(/^\s*```/gm)?.length ?? 0) % 2 === 1
+
 function Preview({ source, refs, onRef }: { source: string; refs: RefLookup; onRef: (kind: RefKind, id: number) => void }) {
   const html = useMemo(() => renderMarkdown(source, refs), [source, refs])
   function click(e: MouseEvent) {
+    const copy = (e.target as HTMLElement).closest<HTMLButtonElement>('.code-copy')
+    if (copy) {
+      const code = copy.closest('.code-block')?.querySelector('code')?.textContent ?? ''
+      void copyText(code).then(ok => {
+        copy.textContent = ok ? 'Copied' : 'Copy failed'
+        setTimeout(() => { copy.textContent = 'Copy' }, 1500)
+      })
+      return
+    }
     const a = (e.target as HTMLElement).closest<HTMLElement>('a.ref')
     if (!a) return
     e.preventDefault()
@@ -172,7 +201,32 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(at + 2, at + 2); syncPicker(el) })
   }
 
+  // wrap the selection (or nothing) in a ``` fence and put the caret where the language goes
+  function insertCode() {
+    const el = body.current
+    if (!el || !draft) return
+    const before = draft.body.slice(0, el.selectionStart), code = draft.body.slice(el.selectionStart, el.selectionEnd)
+    const after = draft.body.slice(el.selectionEnd)
+    const lead = before && !before.endsWith('\n') ? '\n' : ''
+    const block = `${lead}\`\`\`\n${code}${code && !code.endsWith('\n') ? '\n' : ''}\`\`\`${after.startsWith('\n') ? '' : '\n'}`
+    change({ body: before + block + after })
+    const caret = before.length + lead.length + 3
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(caret, caret) })
+  }
+
   function onBodyKey(e: KeyboardEvent<HTMLTextAreaElement>) {
+    // Tab indents inside a code block; elsewhere it keeps moving focus as usual
+    if (!picker && e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey
+        && inFence(e.currentTarget.value, e.currentTarget.selectionStart)) {
+      e.preventDefault()
+      // insertText keeps the browser's undo history; it fires onChange like typing does
+      if (!document.execCommand('insertText', false, '    ')) {
+        const el = e.currentTarget, at = el.selectionStart
+        change({ body: el.value.slice(0, at) + '    ' + el.value.slice(el.selectionEnd) })
+        requestAnimationFrame(() => el.setSelectionRange(at + 4, at + 4))
+      }
+      return
+    }
     if (!picker) return
     const n = candidates.length
     if (e.key === 'Escape') setPicker(null)
@@ -233,8 +287,11 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
 
       {mode === 'write' && (
         <div className="note-hints muted small">
-          <span>Markdown · <code>$x^2$</code> inline · <code>$$…$$</code> display · <code>[[</code> reference</span>
-          <button className="link" onClick={startRef}><Link2 size={14} /> Reference</button>
+          <span>Markdown · <code>$x^2$</code> inline · <code>$$…$$</code> display · <code>```python</code> code · <code>[[</code> reference</span>
+          <span className="note-tools">
+            <button className="link" onClick={insertCode} title="Code block (wraps the selection)"><Code size={14} /> Code</button>
+            <button className="link" onClick={startRef}><Link2 size={14} /> Reference</button>
+          </span>
         </div>
       )}
       <div className={'note-panes ' + mode}>

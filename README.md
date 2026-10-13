@@ -53,7 +53,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 - **Tabs**: *University*, *Side Projects* and *Journal* in the top bar. University switches between *Tasks* and *Notes* under the top bar.
 - **Semesters**: chips under the top bar; `＋ Semester` adds one, *Rename*/*Delete* act on the selected one.
 - **Subjects / projects**: cards. Click the name to rename, the colored dot to change color, 🗑 to delete.
-- **Tasks**: `New` / `＋ New task` adds a task. Click a title to edit; checkbox marks done.
+- **Tasks**: `New` / `＋ New task` adds a task. Click a title to edit; checkbox marks done; the red ✕ deletes it.
 - **Sub-tasks**: hover a task and press `＋`. Use the ▾/▸ arrow to collapse a branch.
 - Inputs: **Enter** saves, **Esc** cancels. When adding tasks, Enter saves and keeps the input open for the next one.
 - Each card's bottom edge is a progress bar that fills as its tasks get done.
@@ -63,6 +63,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 *University → Notes* (next to *Tasks*) holds the notes of the selected semester. Each note belongs to a lecture (a subject), has a date and a title, and saves as you type.
 
 - **Markdown with LaTeX**: `$…$` inline, `$$…$$` displayed. Plain amounts like `$5 and $10` stay text. Rendered with KaTeX, bundled, so it works offline.
+- **Code snippets**: fence code with a language, e.g. ` ```python ` … ` ``` `, for syntax highlighting (Python, C/C++, C#, Java, JavaScript/TypeScript, Go, Rust, Kotlin, Haskell, Julia, R, MATLAB, SQL, Bash/shell, JSON, YAML, HTML/XML, CSS, LaTeX, Markdown). Each snippet shows its language and a *Copy* button. The *Code* button wraps the selected text in a fence, and Tab indents inside a code block.
 - **Write / Preview**: switch with the buttons or Ctrl/⌘+E. On a wide screen, Write shows the rendered note next to the text.
 - **References**: type `[[` (or press *Reference*) and pick a note or lecture from any semester. This inserts `[[note:12|Title]]`, which shows the note's current title, so renaming doesn't break links. A note lists the notes that reference it under *Referenced in*.
 - **Export**: the ⤓ button in a note downloads it as `.md`. *Export* in the list downloads the notes of the selected lecture, or of the whole semester, as a zip of `.md` files laid out as `Semester/Lecture/2026-10-13 Title.md`. Each file has YAML front matter (title, date, lecture, semester), references become relative links between the files, and LaTeX stays as `$…$`. That works in Obsidian, Typora, VS Code and GitHub. Unpack several exports into the same folder and links between them keep working.
