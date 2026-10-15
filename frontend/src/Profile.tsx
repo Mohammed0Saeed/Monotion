@@ -1,7 +1,9 @@
-import { useState, type FormEvent, type MouseEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent, type MouseEvent } from 'react'
 import { Laptop, LogOut, Moon, Sun } from 'lucide-react'
 import { api } from './api'
 import Avatar from './Avatar'
+import { COLORS } from './Group'
+import { headingColor, setHeadingColor, type HeadingColor } from './headings'
 import { useSlidingPill } from './Segmented'
 import type { ThemePref } from './theme'
 import type { Profile as ProfileData } from './types'
@@ -39,6 +41,7 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
   const [deletePw, setDeletePw] = useState('')
   const nameForm = useForm(), pwForm = useForm(), deleteForm = useForm()
   const [themeRef, pill] = useSlidingPill<HTMLDivElement>(theme)
+  const [headings, setHeadings] = useState(headingColor)
 
   const { stats } = me
   const since = new Date(me.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
@@ -60,6 +63,10 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
     e.preventDefault()
     if (!confirm('Delete your account and everything in it? This cannot be undone.')) return
     deleteForm.run(async () => { await api.deleteAccount(deletePw); onLogout(); return 'Account deleted.' })
+  }
+  function pickHeadings(color: HeadingColor) {
+    setHeadingColor(color)
+    setHeadings(color)
   }
   function pickTheme(id: ThemePref, e: MouseEvent) {
     const r = e.currentTarget.getBoundingClientRect()
@@ -106,6 +113,16 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
           ))}
         </div>
         <p className="muted small">System follows your device's light or dark setting.</p>
+        <h3>Note headings</h3>
+        <div className="swatches heading-swatches" role="radiogroup" aria-label="Note heading color">
+          <button role="radio" aria-checked={headings === 'none'} className={'swatch swatch-none' + (headings === 'none' ? ' current' : '')}
+                  style={{ '--i': 0 } as CSSProperties} aria-label="No color" title="No color" onClick={() => pickHeadings('none')} />
+          {COLORS.map((c, i) => (
+            <button key={c} role="radio" aria-checked={headings === c} className={`swatch c-${c}` + (headings === c ? ' current' : '')}
+                    style={{ '--i': i + 1 } as CSSProperties} aria-label={c} title={c} onClick={() => pickHeadings(c)} />
+          ))}
+        </div>
+        <p className="muted small">Colors the headings in lecture notes, on screen and in saved PDFs.</p>
       </section>
 
       <section className="panel">

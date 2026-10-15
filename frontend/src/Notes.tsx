@@ -2,8 +2,9 @@ import {
   useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState,
   type KeyboardEvent, type MouseEvent,
 } from 'react'
-import { ArrowLeft, Code, Download, Eye, FileDown, Link2, PenLine, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Code, Download, Eye, FileDown, FileText, Link2, PenLine, Plus, Trash2 } from 'lucide-react'
 import { api } from './api'
+import { headingClass } from './headings'
 import { renderMarkdown, type RefLookup } from './markdown'
 import { useSlidingPill } from './Segmented'
 import type { Note, NotePatch, NotesIndex, NoteSummary, Semester } from './types'
@@ -86,6 +87,31 @@ function keepCaretVisible(el: HTMLTextAreaElement) {
   else if (y + 16 > pane.scrollTop + pane.clientHeight) pane.scrollTop = y + 16 - pane.clientHeight
 }
 
+/** Save as PDF through the print dialog: the rendered note goes on a light page of its own, the app is hidden while
+ *  printing (see .print-sheet in styles.css). Math and code stay text, and the page title becomes the suggested
+ *  file name, the same "2026-10-13 Title" the .md export uses. */
+function printNote(note: Note, lecture: string, refs: RefLookup) {
+  document.querySelector('.print-sheet')?.remove()
+  const title = note.title || 'Untitled'
+  const sheet = Object.assign(document.createElement('article'), { className: 'print-sheet' })
+  sheet.dataset.theme = 'light'
+  const head = sheet.appendChild(document.createElement('h1'))
+  head.textContent = title
+  const meta = sheet.appendChild(document.createElement('p'))
+  meta.className = 'print-meta'
+  meta.textContent = `${shortDate(note.note_date)} · ${lecture}`
+  const body = sheet.appendChild(document.createElement('div'))
+  body.className = 'md' + headingClass()
+  body.innerHTML = renderMarkdown(note.body, refs)
+  body.querySelectorAll('a.ref').forEach(a => a.removeAttribute('href')) // links into the app mean nothing on paper
+  document.body.append(sheet)
+
+  const appTitle = document.title
+  document.title = `${note.note_date} ${title}`.replace(/[\\/:*?"<>|]/g, '_')
+  addEventListener('afterprint', () => { document.title = appTitle; sheet.remove() }, { once: true })
+  print()
+}
+
 function Preview({ source, refs, onRef }: { source: string; refs: RefLookup; onRef: (kind: RefKind, id: number) => void }) {
   const html = useMemo(() => renderMarkdown(source, refs), [source, refs])
   function click(e: MouseEvent) {
@@ -105,7 +131,7 @@ function Preview({ source, refs, onRef }: { source: string; refs: RefLookup; onR
     else if (a.dataset.lecture) onRef('lecture', Number(a.dataset.lecture))
   }
   if (!source.trim()) return <p className="muted md-empty">Nothing written yet.</p>
-  return <div className="md" onClick={click} dangerouslySetInnerHTML={{ __html: html }} />
+  return <div className={'md' + headingClass()} onClick={click} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
@@ -293,6 +319,10 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
         <button className="icon-round" aria-label="Export as Markdown" title="Export as .md"
                 onClick={() => void flush().then(() => api.exportNote(id)).catch(err => alert(`Export failed: ${err.message}`))}>
           <FileDown size={16} />
+        </button>
+        <button className="icon-round" aria-label="Save as PDF" title="Save as PDF"
+                onClick={() => printNote(draft, refs.lecture(draft.subject_id)?.label ?? '', refs)}>
+          <FileText size={16} />
         </button>
         <button className="btn danger icon-only" aria-label="Delete note" title="Delete note"
                 onClick={() => { if (!confirm('Delete this note?')) return; pending.current = {}; clearTimeout(timer.current); onDelete() }}>

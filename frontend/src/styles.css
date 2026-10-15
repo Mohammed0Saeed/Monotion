@@ -408,6 +408,11 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .stack-form { display: flex; flex-direction: column; gap: 12px; }
 .stack-form .btn-primary { align-self: flex-start; }
 .theme-seg .seg-btn { padding: 7px 14px; }
+.panel h3 { margin: 22px 0 12px; font-size: 13px; font-weight: 600; }
+.heading-swatches { padding: 0 4px; }
+.panel .swatch.current { box-shadow: 0 0 0 2px var(--raised), 0 0 0 4px var(--ink); }
+.swatch-none { border: 1.5px solid rgb(var(--fg) / .3);
+  background: linear-gradient(135deg, transparent 44%, rgb(var(--fg) / .45) 44% 56%, transparent 56%); }
 
 /* ───────── journal ───────── */
 .journal {
@@ -546,8 +551,10 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .md h1 { font-size: 22px; }
 .md h2 { font-size: 18px; }
 .md h3, .md h4 { font-size: 15px; }
+.md.colored-headings :is(h1, h2, h3, h4) { color: var(--ac); }
 .md p, .md ul, .md ol, .md blockquote, .md pre, .md table { margin: 0 0 1em; }
 .md ul, .md ol { padding-left: 1.4em; }
+.md ol { padding-left: 4ch; } /* the marker sits outside: room for "10. " in the monospace font, or it gets clipped */
 .md li + li { margin-top: .2em; }
 .md a { color: var(--blue); }
 .md code { font-family: inherit; font-size: .92em; padding: 1px 5px; border-radius: 4px; background: rgb(var(--fg) / .07); }
@@ -588,6 +595,32 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .ref { color: var(--blue); text-decoration: none; border-bottom: 1px dashed currentColor; }
 .md a.ref-lecture { color: var(--ac); }
 .ref.broken { color: var(--muted); border: 0; text-decoration: line-through; }
+
+/* Save as PDF: a note printed on its own, light, with the app hidden; nothing shows on screen */
+.print-sheet { display: none; }
+@media print {
+  /* no page margin leaves the browser no room for its own header and footer (title, URL, date, page numbers);
+     the sheet's padding is the margin instead, repeated on every page */
+  @page { margin: 0; }
+  html, body { background: #fff !important; color-scheme: light !important; }
+  body > :not(.print-sheet) { display: none !important; }
+  .print-sheet { display: block; padding: 16mm 15mm; box-decoration-break: clone; -webkit-box-decoration-break: clone; color: var(--ink); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .print-sheet h1 { margin: 0; font-size: 22pt; font-weight: 700; font-stretch: var(--wide); line-height: 1.2; }
+  .print-meta { margin: 4pt 0 18pt; font-size: 9pt; color: var(--muted); }
+  .print-sheet .md { font-size: 10.5pt; line-height: 1.6; animation: none; }
+  .print-sheet .md h1 { font-size: 16pt; }
+  .print-sheet .md h2 { font-size: 13pt; }
+  .print-sheet .md h3, .print-sheet .md h4 { font-size: 11pt; }
+  .print-sheet .md :is(h1, h2, h3, h4) { break-after: avoid; }
+  /* nothing scrolls on paper: long code lines and wide tables wrap instead of being cut off */
+  .print-sheet .md :is(pre, table, .math-block) { overflow: visible; }
+  .print-sheet .md table { display: table; }
+  .print-sheet .md pre code { white-space: pre-wrap; }
+  .print-sheet .md .code-block code { font-size: 9pt; }
+  .print-sheet .md :is(.code-block, .math-block, img, tr) { break-inside: avoid; }
+  .print-sheet .code-copy { display: none; }
+  .print-sheet .ref { border: 0; }
+}
 
 .backlinks {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
