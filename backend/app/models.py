@@ -34,9 +34,11 @@ class Subject(Base):
 
 
 class Project(Base):
+    """A side project, or a list of personal tasks (kind="personal"); both hold tasks the same way."""
     __tablename__ = "projects"
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(16), default="project", server_default="project")
     name: Mapped[str] = mapped_column(String(200))
     color: Mapped[str] = mapped_column(String(16), default="purple")
     position: Mapped[int] = mapped_column(Integer, default=0)

@@ -27,7 +27,8 @@ export interface TokenResponse {
   username: string
 }
 
-export type Kind = 'subject' | 'project'
+export type Kind = 'subject' | 'project' | 'personal'
+export type ProjectKind = Exclude<Kind, 'subject'>
 export type TaskPatch = Partial<Pick<Task, 'title' | 'notes' | 'done' | 'collapsed' | 'due_date'>> & { clear_due_date?: boolean }
 export type GroupPatch = Partial<Pick<GroupData, 'name' | 'color' | 'position'>>
 export interface TaskCreate {
@@ -45,6 +46,7 @@ export interface Profile {
     semesters: number
     subjects: number
     projects: number
+    personal_lists: number
     tasks: number
     tasks_done: number
     journal_entries: number

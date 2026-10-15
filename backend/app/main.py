@@ -16,6 +16,7 @@ async def lifespan(app: FastAPI):
     # create_all only makes missing tables; columns added later go here
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(120) NOT NULL DEFAULT ''"))
+        conn.execute(text("ALTER TABLE projects ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'project'"))
     yield
 
 

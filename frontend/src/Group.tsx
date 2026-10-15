@@ -5,6 +5,9 @@ import type { GroupData, GroupPatch, Kind, Task, TaskCreate, TaskPatch } from '.
 
 export const COLORS = ['red', 'blue', 'yellow', 'green', 'orange', 'brown', 'purple', 'pink', 'gray'] as const
 
+/** what a card is called in each section */
+export const NOUN: Record<Kind, string> = { subject: 'subject', project: 'project', personal: 'list' }
+
 const LEAVE_MS = 180
 
 type Tree = Record<number, Task[]>
@@ -129,7 +132,7 @@ export default function Group({ group, actions, kind, index }: {
         )}
         {total > 0 && <span className="count" title={`${done} of ${total} done`}>{done}/{total}</span>}
         <button className="new-btn" onClick={() => setAdding(true)}><Plus size={14} /> New</button>
-        <button className="icon-btn danger" title={`Delete ${kind}`} aria-label={`Delete ${group.name}`}
+        <button className="icon-btn danger" title={`Delete ${NOUN[kind]}`} aria-label={`Delete ${group.name}`}
                 onClick={() => confirm(`Delete "${group.name}" and all its tasks${kind === 'subject' ? ' and notes' : ''}?`) && void actions.removeGroup(group.id)}>
           <Trash2 size={15} />
         </button>

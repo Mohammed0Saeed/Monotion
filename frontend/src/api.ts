@@ -1,6 +1,6 @@
 import type {
-  GroupData, GroupPatch, JournalEntry, JournalPatch, Note, NotePatch, NotesIndex, Profile, Semester, Task, TaskCreate,
-  TaskPatch, TokenResponse,
+  GroupData, GroupPatch, JournalEntry, JournalPatch, Note, NotePatch, NotesIndex, Profile, ProjectKind, Semester, Task,
+  TaskCreate, TaskPatch, TokenResponse,
 } from './types'
 
 const KEY = 'maki_token'
@@ -64,8 +64,8 @@ export const api = {
   updateSubject: (id: number, patch: GroupPatch) => request('PATCH', `/subjects/${id}`, patch),
   deleteSubject: (id: number) => request('DELETE', `/subjects/${id}`),
 
-  projects: () => request<GroupData[]>('GET', '/projects'),
-  addProject: (name: string, color: string) => request<GroupData>('POST', '/projects', { name, color }),
+  projects: (kind: ProjectKind) => request<GroupData[]>('GET', `/projects?kind=${kind}`),
+  addProject: (kind: ProjectKind, name: string, color: string) => request<GroupData>('POST', '/projects', { kind, name, color }),
   updateProject: (id: number, patch: GroupPatch) => request('PATCH', `/projects/${id}`, patch),
   deleteProject: (id: number) => request('DELETE', `/projects/${id}`),
 

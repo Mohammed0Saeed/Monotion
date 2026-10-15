@@ -10,7 +10,6 @@
 
   --blue: #2383e2;
   --red: #d4443a;
-  --red-hover: #e5534b;
 
   --bar-h: 0px; /* height of the phone tab bar, set below */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -28,6 +27,7 @@
   --fg: 255 255 255;        /* overlay tint: rgb(var(--fg) / alpha) */
   --line: rgb(255 255 255 / .08);
   --scroll: #3a3a3a;
+  --danger-ink: #f0716a;
   --hl-keyword: #ff7b72; --hl-title: #d2a8ff; --hl-number: #79c0ff; --hl-string: #a5d6ff;
   --hl-builtin: #ffa657; --hl-comment: #8b949e; --hl-name: #7ee787;
 }
@@ -43,6 +43,7 @@
   --fg: 55 53 47;
   --line: rgb(55 53 47 / .1);
   --scroll: #d3d1cb;
+  --danger-ink: #c9372c;
   --hl-keyword: #cf222e; --hl-title: #8250df; --hl-number: #0550ae; --hl-string: #0a3069;
   --hl-builtin: #953800; --hl-comment: #6e7781; --hl-name: #116329;
 }
@@ -103,7 +104,9 @@ input, textarea { font: inherit; color: inherit; }
 }
 .btn.icon-only { padding: 7px; }
 
-.danger { background: var(--red); color: #fff; transition: background-color .15s, transform .12s; }
+/* red buttons: red text on a clear background; the red fill appears on hover (and while pressed on touch screens) */
+.danger { background: transparent; color: var(--danger-ink); transition: background-color .15s, color .15s, transform .12s; }
+button.danger:not(:disabled):active { background: var(--red); color: #fff; }
 .danger:active, .new-btn:active, .btn-primary:active { transform: scale(.96); }
 
 .btn-primary {
@@ -140,7 +143,7 @@ input, textarea { font: inherit; color: inherit; }
 /* hover effects only where a real pointer can hover (no sticky hover on iPhone/iPad) */
 @media (hover: hover) {
   .link:not(.danger):hover { background: rgb(var(--fg) / .06); color: var(--ink); }
-  .danger:hover { background: var(--red-hover); }
+  button.danger:not(:disabled):hover { background: var(--red); color: #fff; }
   .btn-primary:not(:disabled):hover, .new-btn:hover { filter: brightness(1.1); }
   .ghost-btn:hover { border-color: rgb(var(--fg) / .45); color: var(--ink); }
   .icon-round:hover { background: rgb(var(--fg) / .08); color: var(--ink); }
@@ -149,7 +152,6 @@ input, textarea { font: inherit; color: inherit; }
   .task:hover { background: rgb(var(--fg) / .06); }
   .task:hover .row-actions button { opacity: 1; }
   .card:hover .icon-btn { opacity: 1; }
-  .row-actions button.danger:hover, .icon-btn.danger:hover { background: var(--red); color: #fff; }
   .toggle:hover { background: rgb(var(--fg) / .1); color: var(--ink); }
   .check:hover .box { border-color: rgb(var(--fg) / .75); }
   .row-actions button:not(.danger):hover { background: rgb(var(--fg) / .12); color: var(--ink); }
@@ -266,8 +268,8 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 }
 .icon-btn { display: grid; place-items: center; padding: 5px; border-radius: 6px; opacity: 0; transition: opacity .15s, background-color .15s; }
 .icon-btn:focus-visible { opacity: 1; }
-/* delete buttons stay visible in a soft red and turn solid on hover; other row controls appear on hover */
-.icon-btn.danger { opacity: 1; background: rgb(212 68 58 / .18); color: var(--red-hover); }
+/* a card's delete button stays visible; a task's controls appear when the task is hovered */
+.icon-btn.danger { opacity: 1; }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 9px; padding: 2px 12px 12px; }
 .swatch {
@@ -341,8 +343,8 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   display: grid; place-items: center; width: 24px; height: 24px; border-radius: 5px; color: rgb(var(--fg) / .7);
   opacity: 0; transition: opacity .12s, background-color .15s, color .15s;
 }
-.task:focus-within .row-actions button, .row-actions button.danger { opacity: 1; }
-.row-actions button.danger { background: rgb(212 68 58 / .18); color: var(--red-hover); }
+.task:focus-within .row-actions button { opacity: 1; }
+.row-actions button.danger { color: var(--danger-ink); }
 
 /* sub-tasks expand / collapse by animating the grid row */
 .kids { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
@@ -396,7 +398,7 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   display: block; height: 100%; border-radius: 6px; background: var(--blue); transform-origin: left;
   animation: grow .9s var(--ease-out) .15s both;
 }
-.figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0 0; }
+.figures { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 18px 0 0; }
 .figures div { display: flex; flex-direction: column-reverse; gap: 2px; }
 .figures dt { font-size: 12px; color: var(--muted); }
 .figures dd { margin: 0; font-size: 18px; font-weight: 700; font-stretch: var(--wide); font-variant-numeric: tabular-nums; }
@@ -470,7 +472,7 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 
 /* ───────── lecture notes ───────── */
 .notes .editor { max-width: 1280px; }
-.journal-list code, .note-hints code {
+.note-hints code {
   font-family: inherit; font-size: 11px; padding: 1px 5px; border-radius: 4px; background: rgb(var(--fg) / .07); color: var(--ink);
 }
 .lecture-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
@@ -485,6 +487,7 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .notes-actions .btn-primary { flex: 1; }
 .ghost-btn:disabled { opacity: .45; cursor: default; }
 .note-lecture { display: flex; align-items: center; gap: 6px; }
+.notes .entry-item { scroll-margin: 16px; } /* room around a note scrolled into view */
 
 .note-editor { container: note / inline-size; }
 .note-editor .editor-bar { flex-wrap: wrap; }
@@ -499,11 +502,26 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .note-write { position: relative; min-width: 0; }
 .note-body { min-height: 40vh; font-size: 14px; line-height: 1.7; }
 .note-panes.write .note-preview { display: none; }
-.note-panes.preview .note-preview { max-width: 80ch; }
+.note-panes.preview .note-preview > * { max-width: 80ch; }
 /* wide enough: write on the left, the rendered note on the right */
 @container note (min-width: 920px) {
   .note-panes.write { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
   .note-panes.write .note-preview { display: block; padding-left: 32px; border-left: 1px solid var(--line); }
+}
+
+/* from tablet width up the notes view fills the window and stays put: the top bar, semester bar, list,
+   toolbar and title don't move, only the note's text scrolls (writing and preview each on their own) */
+@media (min-width: 760px) {
+  .app:has(.uni[data-mode="notes"] .notes) { height: 100dvh; display: flex; flex-direction: column; }
+  .app:has(.uni[data-mode="notes"] .notes) > main { flex: 1; min-height: 0; }
+  .uni[data-mode="notes"]:has(.notes) { height: 100%; display: flex; flex-direction: column; }
+  .uni .notes { flex: 1; min-height: 0; width: 100%; }
+  .uni[data-mode="notes"] > .subbar { width: 100%; } /* auto margins would shrink it in the column */
+  .notes .journal-list { overflow-y: auto; }
+  .notes .note-editor { display: flex; flex-direction: column; min-height: 0; padding-bottom: 0; }
+  .notes .note-panes { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); }
+  .notes .note-write, .notes .note-preview { min-height: 0; overflow-y: auto; padding-bottom: 48px; }
+  .notes .note-write { overscroll-behavior: contain; }
 }
 
 .ref-picker {
@@ -511,6 +529,7 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   background: var(--raised); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgb(0 0 0 / .22);
   animation: fade-in .12s both;
 }
+.ref-picker.above { transform: translateY(-100%); }
 .ref-picker li { display: flex; align-items: flex-start; gap: 9px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
 .ref-picker li.active { background: rgb(var(--fg) / .09); }
 .ref-dot { width: 8px; height: 8px; margin-top: 6px; flex: none; border-radius: 50%; background: var(--ac); }
@@ -643,6 +662,15 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   .subbar { padding: 18px 18px 0; }
   .journal { grid-template-columns: 260px minmax(0, 1fr); }
   .editor { padding: 24px 28px 64px; }
+}
+
+/* narrower screens: short tab names (and on narrow tablets no logo text) so the four sections stay on one line */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .seg.tabs .tab-label { display: none; }
+  .seg.tabs .tab-short { display: inline; }
+}
+@media (min-width: 760px) and (max-width: 899px) {
+  .logo-text { display: none; }
 }
 
 /* ───────── phone ───────── */

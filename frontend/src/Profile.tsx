@@ -89,6 +89,7 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
           <div><dt>Semesters</dt><dd>{stats.semesters}</dd></div>
           <div><dt>Subjects</dt><dd>{stats.subjects}</dd></div>
           <div><dt>Projects</dt><dd>{stats.projects}</dd></div>
+          <div><dt>Personal lists</dt><dd>{stats.personal_lists}</dd></div>
           <div><dt>Journal entries</dt><dd>{stats.journal_entries}</dd></div>
         </dl>
       </section>
@@ -141,7 +142,7 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
 
       <section className="panel panel-danger">
         <h2>Delete account</h2>
-        <p className="muted small">Removes your account with all semesters, projects, tasks, notes and journal entries.</p>
+        <p className="muted small">Removes your account with all semesters, projects, personal lists, tasks, notes and journal entries.</p>
         <form className="row-form" onSubmit={deleteAccount}>
           <input className="text-input" type="password" value={deletePw} onChange={e => setDeletePw(e.target.value)}
                  placeholder="Your password" aria-label="Password to confirm" autoComplete="current-password" required />

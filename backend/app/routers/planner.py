@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from ..auth import current_user
 from ..db import get_db
 from ..models import Project, Semester, Subject, Task, User
-from ..schemas import (GroupOut, NameIn, NamePatch, SemesterOut, TaskCreate,
-                       TaskOut, TaskPatch)
+from ..schemas import (GroupOut, NameIn, NamePatch, ProjectIn, ProjectKind,
+                       SemesterOut, TaskCreate, TaskOut, TaskPatch)
 
 router = APIRouter(tags=["planner"], dependencies=[Depends(current_user)])
 
@@ -116,18 +116,18 @@ def delete_subject(id_: int, db: Session = Depends(get_db), user: User = Depends
     db.commit()
 
 
-# ---------- projects ----------
+# ---------- projects (side projects and personal lists) ----------
 @router.get("/projects", response_model=list[GroupOut])
-def list_projects(db: Session = Depends(get_db), user: User = Depends(current_user)):
-    projects = db.scalars(select(Project).where(Project.user_id == user.id)
+def list_projects(kind: ProjectKind = "project", db: Session = Depends(get_db), user: User = Depends(current_user)):
+    projects = db.scalars(select(Project).where(Project.user_id == user.id, Project.kind == kind)
                           .order_by(Project.position, Project.id)).all()
     return groups_out(db, projects, "project_id", user)
 
 
 @router.post("/projects", response_model=GroupOut)
-def create_project(body: NameIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    p = Project(user_id=user.id, name=body.name, color=body.color or "purple",
-                position=next_pos(db, Project, user_id=user.id))
+def create_project(body: ProjectIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    p = Project(user_id=user.id, kind=body.kind, name=body.name, color=body.color or "purple",
+                position=next_pos(db, Project, user_id=user.id, kind=body.kind))
     db.add(p)
     db.commit()
     return GroupOut(id=p.id, name=p.name, color=p.color, position=p.position, tasks=[])

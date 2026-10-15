@@ -1,12 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
 import {
   FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
+  UserRound,
 } from 'lucide-react'
 import { api, auth } from './api'
 import Login from './Login'
 import Logo from './Logo'
 import InlineInput from './InlineInput'
-import Group, { COLORS, type GroupActions } from './Group'
+import Group, { COLORS, NOUN, type GroupActions } from './Group'
 import { useSlidingPill } from './Segmented'
 import Avatar from './Avatar'
 import Journal from './Journal'
@@ -14,7 +15,7 @@ import Profile from './Profile'
 import { resolveTheme, useTheme } from './theme'
 import type { GroupData, Kind, Profile as ProfileData, Semester, Task } from './types'
 
-type View = 'university' | 'projects' | 'journal' | 'profile'
+type View = 'university' | 'projects' | 'personal' | 'journal' | 'profile'
 
 // markdown + KaTeX are big; only load them when notes are opened
 const Notes = lazy(() => import('./Notes'))
@@ -22,6 +23,7 @@ const Notes = lazy(() => import('./Notes'))
 const TABS = [
   { id: 'university', label: 'University', short: 'University', Icon: GraduationCap },
   { id: 'projects', label: 'Side Projects', short: 'Projects', Icon: Rocket },
+  { id: 'personal', label: 'Personal', short: 'Personal', Icon: UserRound },
   { id: 'journal', label: 'Journal', short: 'Journal', Icon: NotebookPen, experimental: true },
 ] as const
 
@@ -62,8 +64,8 @@ function Board({ kind, semester }: { kind: Kind; semester?: Semester }) {
   const columnCount = useColumnCount()
 
   const load = useCallback(async () => {
-    setGroups(isSubject ? await api.subjects(semester!.id) : await api.projects())
-  }, [isSubject, semester?.id])
+    setGroups(kind === 'subject' ? await api.subjects(semester!.id) : await api.projects(kind))
+  }, [kind, semester?.id])
 
   useEffect(() => { setGroups(null); load() }, [load])
 
@@ -96,15 +98,15 @@ function Board({ kind, semester }: { kind: Kind; semester?: Semester }) {
 
   async function createGroup(name: string) {
     const color = COLORS[(groups?.length ?? 0) % COLORS.length]
-    const g = await (isSubject ? api.addSubject(semester!.id, name, color) : api.addProject(name, color))
+    const g = await (kind === 'subject' ? api.addSubject(semester!.id, name, color) : api.addProject(kind, name, color))
     setGroups(gs => gs && [...gs, g])
   }
 
   if (!groups) return <Loading />
-  const noun = isSubject ? 'subject' : 'project'
+  const noun = NOUN[kind]
   const addTile = adding ? (
     <div className="card c-gray new-group" style={{ '--i': 0 } as CSSProperties}>
-      <InlineInput placeholder={isSubject ? 'Subject name' : 'Project name'} className="group-edit"
+      <InlineInput placeholder={{ subject: 'Subject name', project: 'Project name', personal: 'List name, e.g. Errands' }[kind]} className="group-edit"
                    onSubmit={createGroup} onClose={() => setAdding(false)} />
     </div>
   ) : (
@@ -172,7 +174,7 @@ function University() {
   }
 
   return (
-    <>
+    <div className="uni" data-mode={mode}>
       <div className="subbar">
         <div className="seg" ref={modeRef} role="tablist" aria-label="Tasks or notes">
           <span className="seg-pill" style={modePill} />
@@ -203,7 +205,7 @@ function University() {
         : <Suspense fallback={<Loading />}>
             <Notes semester={semester!} onSemester={setCurrent} onTasks={() => setMode('tasks')} />
           </Suspense>}
-    </>
+    </div>
   )
 }
 
@@ -259,6 +261,7 @@ export default function App() {
       <main key={view} className={'view-' + view}>
         {view === 'university' && <University />}
         {view === 'projects' && <Board kind="project" />}
+        {view === 'personal' && <Board kind="personal" />}
         {view === 'journal' && <Journal />}
         {view === 'profile' && (me
           ? <Profile me={me} onChange={setMe} theme={theme} onTheme={setTheme} onLogout={logout} />

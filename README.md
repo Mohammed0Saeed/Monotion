@@ -4,6 +4,7 @@ A local, self-hosted task manager and lecture notebook with a Notion-dark look �
 
 - **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), plus lecture notes with LaTeX
 - **Side Projects** — projects → tasks → sub-tasks
+- **Personal** — lists (e.g. *Errands*, *Home*) → tasks → sub-tasks
 - **Journal** *(experimental)* — dated entries with an optional mood, saved as you type
 - **Profile** — display name, password, appearance (system / light / dark), stats, log out, delete account
 
@@ -50,10 +51,10 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 ## Using Monotion
 
-- **Tabs**: *University*, *Side Projects* and *Journal* in the top bar. University switches between *Tasks* and *Notes* under the top bar.
+- **Tabs**: *University*, *Side Projects*, *Personal* and *Journal* in the top bar. University switches between *Tasks* and *Notes* under the top bar.
 - **Semesters**: chips under the top bar; `＋ Semester` adds one, *Rename*/*Delete* act on the selected one.
-- **Subjects / projects**: cards. Click the name to rename, the colored dot to change color, 🗑 to delete.
-- **Tasks**: `New` / `＋ New task` adds a task. Click a title to edit; checkbox marks done; the red ✕ deletes it.
+- **Subjects / projects / lists**: cards. Click the name to rename, the colored dot to change color, 🗑 to delete.
+- **Tasks**: `New` / `＋ New task` adds a task. Click a title to edit; checkbox marks done; hover a task for its red ✕ to delete it.
 - **Sub-tasks**: hover a task and press `＋`. Use the ▾/▸ arrow to collapse a branch.
 - Inputs: **Enter** saves, **Esc** cancels. When adding tasks, Enter saves and keeps the input open for the next one.
 - Each card's bottom edge is a progress bar that fills as its tasks get done.
@@ -64,7 +65,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 - **Markdown with LaTeX**: `$…$` inline, `$$…$$` displayed. Plain amounts like `$5 and $10` stay text. Rendered with KaTeX, bundled, so it works offline.
 - **Code snippets**: fence code with a language, e.g. ` ```python ` … ` ``` `, for syntax highlighting (Python, C/C++, C#, Java, JavaScript/TypeScript, Go, Rust, Kotlin, Haskell, Julia, R, MATLAB, SQL, Bash/shell, JSON, YAML, HTML/XML, CSS, LaTeX, Markdown). Each snippet shows its language and a *Copy* button. The *Code* button wraps the selected text in a fence, and Tab indents inside a code block.
-- **Write / Preview**: switch with the buttons or Ctrl/⌘+E. On a wide screen, Write shows the rendered note next to the text.
+- **Write / Preview**: switch with the buttons or Ctrl/⌘+E. On a wide screen, Write shows the rendered note next to the text. From tablet width up the page stays put and only the note's text scrolls (writing and preview each on their own); the list, toolbar and title don't move.
 - **References**: type `[[` (or press *Reference*) and pick a note or lecture from any semester. This inserts `[[note:12|Title]]`, which shows the note's current title, so renaming doesn't break links. A note lists the notes that reference it under *Referenced in*.
 - **Export**: the ⤓ button in a note downloads it as `.md`. *Export* in the list downloads the notes of the selected lecture, or of the whole semester, as a zip of `.md` files laid out as `Semester/Lecture/2026-10-13 Title.md`. Each file has YAML front matter (title, date, lecture, semester), references become relative links between the files, and LaTeX stays as `$…$`. That works in Obsidian, Typora, VS Code and GitHub. Unpack several exports into the same folder and links between them keep working.
 
@@ -124,17 +125,17 @@ backend/app/
   main.py          FastAPI app, creates tables on startup, serves frontend/dist
   config.py        settings from .env
   db.py            engine / session
-  models.py        User, Semester, Subject, Project, Task, LectureNote, JournalEntry
+  models.py        User, Semester, Subject, Project (side project or personal list), Task, LectureNote, JournalEntry
   schemas.py       Pydantic request/response models
   auth.py          password hashing, JWT, current_user dependency
   routers/auth.py  register / login / me
-  routers/planner.py  semesters, subjects, projects, tasks
+  routers/planner.py  semesters, subjects, projects / personal lists, tasks
   routers/journal.py  journal entries
   routers/notes.py    lecture notes, references, .md / zip export
 frontend/src/
   types.ts         shared TypeScript types
   api.ts           typed fetch client + token storage
-  App.tsx          top bar, University & Projects boards
+  App.tsx          top bar, University, Projects & Personal boards
   Group.tsx        colored card + recursive task rows
   InlineInput.tsx  Enter-to-save / Esc-to-cancel input used everywhere
   Segmented.tsx    sliding-pill hook for tabs and semesters
@@ -150,7 +151,7 @@ frontend/src/
 
 ### Data model
 
-A `Task` belongs to exactly one `Subject` **or** one `Project` (enforced by a DB check constraint) and may point to a parent task for sub-tasks. Deleting a parent cascades to its sub-tasks; deleting a semester cascades to subjects and tasks.
+A `Task` belongs to exactly one `Subject` **or** one `Project` (enforced by a DB check constraint) and may point to a parent task for sub-tasks. Personal lists are `Project` rows with `kind = 'personal'` (side projects have `kind = 'project'`), so they hold tasks exactly like projects. Deleting a parent cascades to its sub-tasks; deleting a semester cascades to subjects and tasks.
 
 A `LectureNote` belongs to one `Subject` and is deleted with it (and with its semester). References live in the note's markdown as `[[note:<id>|<title>]]` and `[[lecture:<id>|<name>]]`; the id is what links, the text after `|` is only shown if the target has been deleted. Backlinks are found by searching other notes for the reference, so nothing extra is stored.
 
@@ -169,8 +170,9 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | GET | `/semesters/{id}/subjects` | subjects with their tasks (flat list, `parent_id` links sub-tasks) |
 | POST | `/semesters/{id}/subjects` | create subject `{name, color}` |
 | PATCH/DELETE | `/subjects/{id}` | update name/color/position / delete |
-| GET/POST | `/projects` | list with tasks / create |
-| PATCH/DELETE | `/projects/{id}` | update / delete |
+| GET | `/projects[?kind=personal]` | side projects (default) or personal lists, with tasks |
+| POST | `/projects` | create `{name, color, kind?}`, `kind` is `project` (default) or `personal` |
+| PATCH/DELETE | `/projects/{id}` | update / delete (projects and lists alike) |
 | POST | `/tasks` | `{title, subject_id \| project_id \| parent_id}` |
 | PATCH | `/tasks/{id}` | `title, notes, done, collapsed, due_date, clear_due_date, position` |
 | DELETE | `/tasks/{id}` | delete (with sub-tasks) |

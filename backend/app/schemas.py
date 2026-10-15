@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +21,13 @@ class Token(BaseModel):
 class NameIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     color: str | None = None
+
+
+ProjectKind = Literal["project", "personal"]
+
+
+class ProjectIn(NameIn):
+    kind: ProjectKind = "project"
 
 
 class NamePatch(BaseModel):
@@ -73,6 +81,7 @@ class ProfileStats(BaseModel):
     semesters: int
     subjects: int
     projects: int
+    personal_lists: int
     tasks: int
     tasks_done: int
     journal_entries: int

@@ -76,6 +76,16 @@ async function copyText(text: string) {
 const inFence = (text: string, pos: number) =>
   (text.slice(0, text.lastIndexOf('\n', pos - 1) + 1).match(/^\s*```/gm)?.length ?? 0) % 2 === 1
 
+/** Where the writing pane scrolls on its own (tablet and up), keep the caret's line inside it. */
+function keepCaretVisible(el: HTMLTextAreaElement) {
+  const pane = el.parentElement
+  if (!pane || pane.scrollHeight <= pane.clientHeight) return // the page scrolls instead
+  const line = parseFloat(getComputedStyle(el).lineHeight) || 24
+  const y = el.offsetTop + caretXY(el, el.selectionEnd).y
+  if (y - line < pane.scrollTop) pane.scrollTop = y - line - 8
+  else if (y + 16 > pane.scrollTop + pane.clientHeight) pane.scrollTop = y + 16 - pane.clientHeight
+}
+
 function Preview({ source, refs, onRef }: { source: string; refs: RefLookup; onRef: (kind: RefKind, id: number) => void }) {
   const html = useMemo(() => renderMarkdown(source, refs), [source, refs])
   function click(e: MouseEvent) {
@@ -110,7 +120,9 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
   const [draft, setDraft] = useState<Note | null>(null)
   const [mode, setMode] = useState<'write' | 'preview'>('preview')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  const [picker, setPicker] = useState<{ start: number; query: string; x: number; y: number; active: number } | null>(null)
+  const [picker, setPicker] = useState<{
+    start: number; query: string; x: number; y: number; line: number; above: boolean; active: number
+  } | null>(null)
   const pending = useRef<NotePatch>({})
   const timer = useRef<number | undefined>(undefined)
   const body = useRef<HTMLTextAreaElement>(null)
@@ -143,12 +155,15 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
     return () => { document.removeEventListener('visibilitychange', onHide); void flush() }
   }, [flush])
 
-  // grow the textarea with its content
+  // grow the textarea with its content; measuring collapses it for a moment, so put the pane's scroll back after
   useLayoutEffect(() => {
     const el = body.current
     if (!el) return
+    const pane = el.parentElement!, scrolled = pane.scrollTop
     el.style.height = 'auto'
     el.style.height = el.scrollHeight + 'px'
+    pane.scrollTop = scrolled
+    if (document.activeElement === el) keepCaretVisible(el)
   }, [draft?.body, mode])
 
   const candidates = useMemo<Candidate[]>(() => {
@@ -180,7 +195,11 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
     const m = /\[\[([^\]\n|[]{0,40})$/.exec(el.value.slice(0, el.selectionStart))
     if (!m || el.selectionStart !== el.selectionEnd) return setPicker(null)
     const start = el.selectionStart - m[0].length
-    setPicker(p => ({ start, query: m[1], ...caretXY(el, start), active: p?.start === start ? p.active : 0 }))
+    const { x, y } = caretXY(el, start), line = parseFloat(getComputedStyle(el).lineHeight) || 24
+    // open upwards when the caret is near the bottom of the visible text and there is more room above
+    const pane = el.parentElement!, below = pane.scrollTop + pane.clientHeight - y, above = y - line - pane.scrollTop
+    setPicker(p => ({ start, query: m[1], x, y, line, above: below < 220 && above > below,
+                      active: p?.start === start ? p.active : 0 }))
   }
 
   function insertRef(c: Candidate) {
@@ -301,10 +320,12 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
                       spellCheck={false} placeholder={'## Topic\n\nNotes with $\\LaTeX$, e.g. $$\\int_0^1 x^2\\,dx = \\tfrac13$$'}
                       onChange={e => { change({ body: e.target.value }); syncPicker(e.target) }}
                       onClick={e => syncPicker(e.currentTarget)} onKeyDown={onBodyKey}
+                      onSelect={e => keepCaretVisible(e.currentTarget)}
                       onBlur={() => setPicker(null)} />
             {picker && (
-              <ul className="ref-picker" role="listbox" aria-label="Reference"
-                  style={{ top: picker.y + 4, left: `max(0px, min(${picker.x}px, 100% - 300px))` }}>
+              <ul className={'ref-picker' + (picker.above ? ' above' : '')} role="listbox" aria-label="Reference"
+                  style={{ top: picker.above ? picker.y - picker.line - 4 : picker.y + 4,
+                           left: `max(0px, min(${picker.x}px, 100% - 300px))` }}>
                 {candidates.length ? candidates.map((c, i) => (
                   <li key={c.kind + c.id} role="option" aria-selected={i === picker.active}
                       className={`c-${c.color}` + (i === picker.active ? ' active' : '')}
@@ -317,19 +338,20 @@ function Editor({ id, index, refs, onSaved, onDelete, onBack, onRef }: {
             )}
           </div>
         )}
-        <div className="note-preview"><Preview source={mode === 'write' ? preview : draft.body} refs={refs} onRef={onRef} /></div>
+        <div className="note-preview">
+          <Preview source={mode === 'write' ? preview : draft.body} refs={refs} onRef={onRef} />
+          {backlinks.length > 0 && (
+            <section className="backlinks">
+              <h3>Referenced in</h3>
+              {backlinks.map(n => (
+                <button key={n.id} className="link" onClick={() => onRef('note', n.id)}>
+                  {n.title || 'Untitled'} <span className="muted">· {refs.note(n.id)?.hint}</span>
+                </button>
+              ))}
+            </section>
+          )}
+        </div>
       </div>
-
-      {backlinks.length > 0 && (
-        <section className="backlinks">
-          <h3>Referenced in</h3>
-          {backlinks.map(n => (
-            <button key={n.id} className="link" onClick={() => onRef('note', n.id)}>
-              {n.title || 'Untitled'} <span className="muted">· {refs.note(n.id)?.hint}</span>
-            </button>
-          ))}
-        </section>
-      )}
     </article>
   )
 }
@@ -348,6 +370,8 @@ export default function Notes({ semester, onSemester, onTasks }: {
   useEffect(() => { api.notes().then(setIndex) }, [])
   useEffect(() => { localStorage.setItem('maki_notes_lecture', String(lecture ?? '')) }, [lecture])
   useEffect(() => { localStorage.setItem('maki_note', String(selected ?? '')) }, [selected])
+  // new notes land at the bottom of the list: keep the open one in view
+  useEffect(() => { document.querySelector('.notes .entry-item.active')?.scrollIntoView({ block: 'nearest' }) }, [selected, !!index])
 
   const onSaved = useCallback((n: Note) => {
     setIndex(ix => ix && { ...ix, notes: ix.notes.map(x => (x.id === n.id ? summary(n) : x)) })
@@ -360,7 +384,7 @@ export default function Notes({ semester, onSemester, onTasks }: {
   const lectureId = subjects.some(s => s.id === lecture) ? lecture : null
   const inSemester = index.notes.filter(n => subjectOf.get(n.subject_id)?.semester_id === semester.id)
   const shown = inSemester.filter(n => lectureId === null || n.subject_id === lectureId)
-    .sort((a, b) => b.note_date.localeCompare(a.note_date) || b.id - a.id)
+    .sort((a, b) => a.note_date.localeCompare(b.note_date) || a.id - b.id) // oldest first, like the lectures happened
   const current = inSemester.find(n => n.id === selected)
   const months: [string, NoteSummary[]][] = []
   for (const n of shown) {
@@ -383,7 +407,7 @@ export default function Notes({ semester, onSemester, onTasks }: {
   }
 
   async function create() {
-    const n = await api.addNote(lectureId ?? shown[0]?.subject_id ?? subjects[0].id, today())
+    const n = await api.addNote(lectureId ?? shown.at(-1)?.subject_id ?? subjects[0].id, today())
     setIndex(ix => ix && { ...ix, notes: [summary(n), ...ix.notes] })
     setSelected(n.id)
   }
@@ -406,7 +430,6 @@ export default function Notes({ semester, onSemester, onTasks }: {
     <div className="journal notes" data-view={current ? 'editor' : 'list'}>
       <aside className="journal-list">
         <div className="journal-head"><h1>Notes</h1></div>
-        <p className="muted small">Markdown with LaTeX. Type <code>[[</code> to reference another note or lecture.</p>
         <div className="lecture-filter" role="radiogroup" aria-label="Lecture">
           <button role="radio" aria-checked={lectureId === null} className={'chip' + (lectureId === null ? ' on' : '')}
                   onClick={() => setLecture(null)}>All</button>

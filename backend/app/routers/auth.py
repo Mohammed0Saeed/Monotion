@@ -41,7 +41,10 @@ def profile(db: Session, user: User) -> ProfileOut:
         semesters=count(select(func.count()).select_from(Semester).where(Semester.user_id == user.id)),
         subjects=count(select(func.count()).select_from(Subject).join(Semester)
                        .where(Semester.user_id == user.id)),
-        projects=count(select(func.count()).select_from(Project).where(Project.user_id == user.id)),
+        projects=count(select(func.count()).select_from(Project)
+                       .where(Project.user_id == user.id, Project.kind == "project")),
+        personal_lists=count(select(func.count()).select_from(Project)
+                             .where(Project.user_id == user.id, Project.kind == "personal")),
         tasks=count(tasks),
         tasks_done=count(tasks.where(Task.done.is_(True))),
         journal_entries=count(select(func.count()).select_from(JournalEntry)
