@@ -1,21 +1,25 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
 import {
-  FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
+  Archive as ArchiveIcon, FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
   UserRound,
 } from 'lucide-react'
 import { api, auth } from './api'
 import Login from './Login'
 import Logo from './Logo'
 import InlineInput from './InlineInput'
-import Group, { COLORS, NOUN, type GroupActions } from './Group'
+import Group, { COLORS, NOUN, subtree, type GroupActions } from './Group'
 import { useSlidingPill } from './Segmented'
 import Avatar from './Avatar'
 import Journal from './Journal'
 import Profile from './Profile'
+import Archive from './Archive'
 import { resolveTheme, useTheme } from './theme'
-import type { GroupData, Kind, Profile as ProfileData, Semester, Task } from './types'
+import type { ArchiveSection, GroupData, Kind, Profile as ProfileData, Semester, Task } from './types'
 
 type View = 'university' | 'projects' | 'personal' | 'journal' | 'profile'
+
+/** which part of the archive opens from each tab */
+const ARCHIVE_OF: Partial<Record<View, ArchiveSection>> = { university: 'university', projects: 'project', personal: 'personal' }
 
 // markdown + KaTeX are big; only load them when notes are opened
 const Notes = lazy(() => import('./Notes'))
@@ -26,19 +30,6 @@ const TABS = [
   { id: 'personal', label: 'Personal', short: 'Personal', Icon: UserRound },
   { id: 'journal', label: 'Journal', short: 'Journal', Icon: NotebookPen, experimental: true },
 ] as const
-
-/** ids of a task and everything nested under it */
-function subtree(tasks: Task[], id: number): Set<number> {
-  const gone = new Set([id])
-  let grew = true
-  while (grew) {
-    grew = false
-    for (const t of tasks) {
-      if (t.parent_id !== null && gone.has(t.parent_id) && !gone.has(t.id)) { gone.add(t.id); grew = true }
-    }
-  }
-  return gone
-}
 
 /** 2 columns from iPad portrait up, 1 on phones — cards keep their column instead of reflowing like CSS columns */
 function useColumnCount() {
@@ -215,6 +206,8 @@ export default function App() {
   const [theme, setTheme] = useTheme()
   const [view, setView] = useState<View>(() => (localStorage.getItem('maki_tab') as View) || 'university')
   const [tabsRef, pill] = useSlidingPill<HTMLDivElement>(`${view}-${authed}`)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [reloads, setReloads] = useState(0) // bumped when the archive put tasks back, so the board refetches
 
   useEffect(() => { localStorage.setItem('maki_tab', view) }, [view])
   useEffect(() => { if (authed) api.me().then(setMe) }, [authed])
@@ -247,6 +240,9 @@ export default function App() {
           ))}
         </div>
         <span className="spacer" />
+        <button className="icon-round" aria-label="Archive" title="Archive" onClick={() => setArchiveOpen(true)}>
+          <ArchiveIcon size={16} />
+        </button>
         <button className="icon-round" aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
                 title={dark ? 'Light mode' : 'Dark mode'}
                 onClick={e => { const r = e.currentTarget.getBoundingClientRect(); setTheme(dark ? 'light' : 'dark', { x: r.left + r.width / 2, y: r.top + r.height / 2 }) }}>
@@ -258,7 +254,7 @@ export default function App() {
         </button>
         <button className="link danger logout" onClick={logout}><LogOut size={14} /> Log out</button>
       </nav>
-      <main key={view} className={'view-' + view}>
+      <main key={`${view}-${reloads}`} className={'view-' + view}>
         {view === 'university' && <University />}
         {view === 'projects' && <Board kind="project" />}
         {view === 'personal' && <Board kind="personal" />}
@@ -267,6 +263,10 @@ export default function App() {
           ? <Profile me={me} onChange={setMe} theme={theme} onTheme={setTheme} onLogout={logout} />
           : <Loading />)}
       </main>
+      {archiveOpen && (
+        <Archive initial={ARCHIVE_OF[view] ?? 'all'}
+                 onClose={changed => { setArchiveOpen(false); if (changed) setReloads(n => n + 1) }} />
+      )}
     </div>
   )
 }

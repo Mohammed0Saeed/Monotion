@@ -161,6 +161,7 @@ button.danger:not(:disabled):active { background: var(--red); color: #fff; }
   .dot:hover { transform: scale(1.2); }
   .logo:hover svg { transform: rotate(90deg); }
   .entry-item:hover { background: rgb(var(--fg) / .05); }
+  .archive-item:hover { background: rgb(var(--fg) / .04); }
   .mood:hover { color: var(--ink); background: rgb(var(--fg) / .06); }
   .chip:not(.on):hover { color: var(--ink); border-color: rgb(var(--fg) / .3); }
   .ref-picker li:hover { background: rgb(var(--fg) / .06); }
@@ -595,6 +596,43 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .backlinks h3 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .backlinks .link { text-align: left; color: var(--ink); }
 
+/* ───────── archive ───────── */
+html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays put */
+.archive {
+  width: min(720px, calc(100vw - 32px)); max-width: none; max-height: min(84dvh, 820px);
+  padding: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  background: var(--canvas); color: var(--ink);
+  box-shadow: 0 24px 64px rgb(0 0 0 / .35), 0 2px 8px rgb(0 0 0 / .15);
+}
+.archive[open] { animation: rise .3s var(--ease-out) both; }
+.archive::backdrop { background: rgb(0 0 0 / .45); animation: fade-in .2s both; }
+.archive-inner { display: flex; flex-direction: column; max-height: inherit; }
+.archive-head { display: flex; align-items: center; gap: 10px; padding: 16px 16px 0 22px; }
+.archive-head h1 { margin: 0; font-size: 22px; font-weight: 700; font-stretch: var(--wide); }
+.archive-hint { margin: 2px 22px 0; }
+.archive .lecture-filter { margin: 14px 22px 4px; }
+.chip-count { font-variant-numeric: tabular-nums; color: rgb(var(--fg) / .45); }
+.archive-body { overflow-y: auto; overscroll-behavior: contain; padding: 4px 12px 20px; border-top: 1px solid var(--line); margin-top: 10px; }
+.archive-empty { padding: 40px 10px; text-align: center; margin: 0; }
+.archive-group { margin-top: 12px; animation: rise .35s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.archive-group h2 {
+  display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 10px 4px;
+  font-size: 13px; font-weight: 700; font-stretch: var(--wide); overflow-wrap: anywhere;
+}
+.archive-group h2 .muted { font-weight: 400; font-stretch: var(--narrow); }
+.archive-item { border-radius: 8px; transition: background-color .12s; }
+.archive-row { display: flex; align-items: flex-start; gap: 6px; padding-right: 4px; }
+.archive-tree { flex: 1; min-width: 0; }
+.archive-tree .task { padding-left: calc(8px + var(--depth, 0) * 26px); animation: none; }
+.archive-tree .task.done .task-title { color: rgb(var(--fg) / .55); }
+.archive-tree .check, .archive-tree .check input { cursor: default; }
+.archive-when {
+  flex: none; padding-top: 9px; font-size: 12px; font-stretch: var(--narrow); color: var(--muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.archive-actions { flex: none; display: flex; gap: 2px; padding-top: 3px; }
+.archive-actions .link { padding: 5px 8px; }
+
 /* ───────── login ───────── */
 .login-wrap { min-height: 100dvh; display: grid; place-items: center; padding: calc(24px + var(--safe-top)) 24px calc(24px + var(--safe-bottom)); }
 .login {
@@ -719,4 +757,18 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   .lecture-select { max-width: 150px; }
   .mode-label { display: none; }
   .ref-picker { width: min(300px, 100%); }
+
+  /* the archive takes the whole screen */
+  .archive {
+    width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0;
+    padding: var(--safe-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  }
+  .archive-inner { height: 100%; }
+  .archive-head { padding: 10px 10px 0 16px; }
+  .archive-hint, .archive .lecture-filter { margin-left: 16px; margin-right: 16px; }
+  .archive-body { flex: 1; padding: 4px 6px calc(20px + var(--safe-bottom)); }
+  .archive-row { flex-wrap: wrap; align-items: center; }
+  .archive-tree { flex-basis: 100%; }
+  .archive-when { padding: 0 0 6px 40px; }
+  .archive-actions { margin-left: auto; padding: 0 0 4px; }
 }

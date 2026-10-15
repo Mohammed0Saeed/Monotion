@@ -60,6 +60,7 @@ class Task(Base):
     done: Mapped[bool] = mapped_column(Boolean, default=False)
     collapsed: Mapped[bool] = mapped_column(Boolean, default=False)
     due_date: Mapped[date | None] = mapped_column(Date)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)  # set when checked; drives the archive
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

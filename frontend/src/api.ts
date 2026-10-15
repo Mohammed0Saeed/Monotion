@@ -1,5 +1,5 @@
 import type {
-  GroupData, GroupPatch, JournalEntry, JournalPatch, Note, NotePatch, NotesIndex, Profile, ProjectKind, Semester, Task,
+  ArchiveGroup, GroupData, GroupPatch, JournalEntry, JournalPatch, Note, NotePatch, NotesIndex, Profile, ProjectKind, Semester, Task,
   TaskCreate, TaskPatch, TokenResponse,
 } from './types'
 
@@ -72,6 +72,7 @@ export const api = {
   addTask: (body: TaskCreate) => request<Task>('POST', '/tasks', body),
   updateTask: (id: number, patch: TaskPatch) => request<Task>('PATCH', `/tasks/${id}`, patch),
   deleteTask: (id: number) => request('DELETE', `/tasks/${id}`),
+  archive: () => request<ArchiveGroup[]>('GET', '/archive'),
 
   journal: () => request<JournalEntry[]>('GET', '/journal'),
   addJournal: (entry_date?: string) => request<JournalEntry>('POST', '/journal', { entry_date }),

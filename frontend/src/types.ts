@@ -6,6 +6,7 @@ export interface Task {
   done: boolean
   collapsed: boolean
   due_date: string | null
+  completed_at: string | null   // when it was ticked; done top-level tasks archive 2 days later
   position: number
 }
 
@@ -14,6 +15,18 @@ export interface GroupData {
   name: string
   color: string
   position: number
+  tasks: Task[]
+}
+
+export type ArchiveSection = 'university' | 'project' | 'personal'
+
+/** a subject, project or list holding only its archived tasks (with their sub-tasks) */
+export interface ArchiveGroup {
+  section: ArchiveSection
+  id: number
+  name: string
+  color: string
+  semester: string | null
   tasks: Task[]
 }
 

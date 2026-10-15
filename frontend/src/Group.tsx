@@ -12,6 +12,19 @@ const LEAVE_MS = 180
 
 type Tree = Record<number, Task[]>
 
+/** ids of a task and everything nested under it */
+export function subtree(tasks: Task[], id: number): Set<number> {
+  const gone = new Set([id])
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const t of tasks) {
+      if (t.parent_id !== null && gone.has(t.parent_id) && !gone.has(t.id)) { gone.add(t.id); grew = true }
+    }
+  }
+  return gone
+}
+
 function buildTree(tasks: Task[]): Tree {
   const byParent: Tree = {}
   for (const t of tasks) (byParent[t.parent_id ?? 0] ||= []).push(t)
@@ -24,10 +37,12 @@ interface TaskActions {
   add: (body: TaskCreate) => void
 }
 
-function Check({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+export function Check({ checked, onChange, label, disabled }: {
+  checked: boolean; onChange?: (v: boolean) => void; label: string; disabled?: boolean
+}) {
   return (
     <label className="check">
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} aria-label={label} />
+      <input type="checkbox" checked={checked} onChange={e => onChange?.(e.target.checked)} aria-label={label} disabled={disabled} />
       <span className="box" />
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
     </label>

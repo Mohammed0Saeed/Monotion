@@ -1,14 +1,21 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from ..auth import current_user
 from ..db import get_db
 from ..models import Project, Semester, Subject, Task, User
-from ..schemas import (GroupOut, NameIn, NamePatch, ProjectIn, ProjectKind,
-                       SemesterOut, TaskCreate, TaskOut, TaskPatch)
+from ..schemas import (ArchiveGroup, GroupOut, NameIn, NamePatch, ProjectIn,
+                       ProjectKind, SemesterOut, TaskCreate, TaskOut, TaskPatch)
 
 router = APIRouter(tags=["planner"], dependencies=[Depends(current_user)])
+
+# a top-level task done for longer than this leaves its board for the archive, sub-tasks and all
+ARCHIVE_AFTER = timedelta(days=2)
+ARCHIVED = and_(Task.parent_id.is_(None), Task.done.is_(True),
+                Task.completed_at < func.now() - ARCHIVE_AFTER)
 
 
 # ---------- helpers ----------
@@ -39,14 +46,29 @@ def apply_patch(obj, body: NamePatch):
             setattr(obj, k, v)
 
 
+def archived_ids(rows) -> set[int]:
+    """Ids of archived tasks and everything nested under them; rows are (Task, archived) pairs."""
+    parent = {t.id: t.parent_id for t, _ in rows}
+    archived = {t.id for t, is_archived in rows if is_archived}
+
+    def under_archived(id_):
+        while id_ is not None and id_ not in archived:
+            id_ = parent.get(id_)
+        return id_ is not None
+
+    return {id_ for id_ in parent if under_archived(id_)}
+
+
 def groups_out(db: Session, groups: list, key: str, user: User) -> list[GroupOut]:
     ids = [g.id for g in groups]
-    tasks = db.scalars(
-        select(Task).where(getattr(Task, key).in_(ids)).order_by(Task.position, Task.id)
+    rows = db.execute(
+        select(Task, ARCHIVED).where(getattr(Task, key).in_(ids)).order_by(Task.position, Task.id)
     ).all() if ids else []
+    hidden = archived_ids(rows)
     by_group: dict[int, list] = {}
-    for t in tasks:
-        by_group.setdefault(getattr(t, key), []).append(t)
+    for t, _ in rows:
+        if t.id not in hidden:
+            by_group.setdefault(getattr(t, key), []).append(t)
     return [
         GroupOut(id=g.id, name=g.name, color=g.color, position=g.position,
                  tasks=[TaskOut.model_validate(t) for t in by_group.get(g.id, [])])
@@ -147,6 +169,32 @@ def delete_project(id_: int, db: Session = Depends(get_db), user: User = Depends
     db.commit()
 
 
+# ---------- archive ----------
+@router.get("/archive", response_model=list[ArchiveGroup])
+def archive(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Archived tasks of every board, grouped by their subject, project or list."""
+    rows = db.execute(select(Task, ARCHIVED).where(Task.user_id == user.id)
+                      .order_by(Task.position, Task.id)).all()
+    keep = archived_ids(rows)
+    by_subject: dict[int, list] = {}
+    by_project: dict[int, list] = {}
+    for t, _ in rows:
+        if t.id in keep:
+            (by_subject.setdefault(t.subject_id, []) if t.subject_id is not None
+             else by_project.setdefault(t.project_id, [])).append(TaskOut.model_validate(t))
+
+    subjects = db.execute(select(Subject, Semester.name).join(Semester).where(Subject.id.in_(by_subject))
+                          .order_by(Semester.position, Semester.id, Subject.position, Subject.id)).all()
+    projects = db.scalars(select(Project).where(Project.id.in_(by_project))
+                          .order_by(Project.position, Project.id)).all()
+    groups = [ArchiveGroup(section="university", id=s.id, name=s.name, color=s.color, semester=semester,
+                           tasks=by_subject[s.id]) for s, semester in subjects]
+    for kind in ("project", "personal"):
+        groups += [ArchiveGroup(section=kind, id=p.id, name=p.name, color=p.color, semester=None,
+                                tasks=by_project[p.id]) for p in projects if p.kind == kind]
+    return groups
+
+
 # ---------- tasks ----------
 @router.post("/tasks", response_model=TaskOut)
 def create_task(body: TaskCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
@@ -175,6 +223,8 @@ def update_task(tid: int, body: TaskPatch, db: Session = Depends(get_db), user: 
     data = body.model_dump(exclude_unset=True)
     if data.pop("clear_due_date", False):
         t.due_date = None
+    if data.get("done") is not None and data["done"] != t.done:
+        t.completed_at = func.now() if data["done"] else None
     for k, v in data.items():
         if v is not None:
             setattr(t, k, v)

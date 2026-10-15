@@ -49,6 +49,7 @@ class TaskOut(ORM):
     done: bool
     collapsed: bool
     due_date: date | None
+    completed_at: datetime | None
     position: int
 
 
@@ -74,6 +75,19 @@ class GroupOut(ORM):
     name: str
     color: str
     position: int
+    tasks: list[TaskOut]
+
+
+ArchiveSection = Literal["university", "project", "personal"]
+
+
+class ArchiveGroup(BaseModel):
+    """A subject, project or list with only its archived tasks (and their sub-tasks)."""
+    section: ArchiveSection
+    id: int
+    name: str
+    color: str
+    semester: str | None  # subjects only
     tasks: list[TaskOut]
 
 

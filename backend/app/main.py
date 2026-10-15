@@ -17,6 +17,9 @@ async def lifespan(app: FastAPI):
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(120) NOT NULL DEFAULT ''"))
         conn.execute(text("ALTER TABLE projects ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'project'"))
+        conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP"))
+        # tasks ticked before completed_at existed count as done from now, so they archive 2 days later
+        conn.execute(text("UPDATE tasks SET completed_at = now() WHERE done AND completed_at IS NULL"))
     yield
 
 

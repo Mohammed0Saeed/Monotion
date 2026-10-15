@@ -5,6 +5,7 @@ A local, self-hosted task manager and lecture notebook with a Notion-dark look �
 - **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), plus lecture notes with LaTeX
 - **Side Projects** — projects → tasks → sub-tasks
 - **Personal** — lists (e.g. *Errands*, *Home*) → tasks → sub-tasks
+- **Archive** — finished tasks leave their board 2 days after you tick them off; restore or delete them from the archive window
 - **Journal** *(experimental)* — dated entries with an optional mood, saved as you type
 - **Profile** — display name, password, appearance (system / light / dark), stats, log out, delete account
 
@@ -58,6 +59,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 - **Sub-tasks**: hover a task and press `＋`. Use the ▾/▸ arrow to collapse a branch.
 - Inputs: **Enter** saves, **Esc** cancels. When adding tasks, Enter saves and keeps the input open for the next one.
 - Each card's bottom edge is a progress bar that fills as its tasks get done.
+- **Archive**: a task that has been done for more than 2 days moves off its board, sub-tasks and all. The archive button in the top bar opens a window listing archived tasks by subject, project or list (filtered to the tab you're on). *Restore* un-ticks a task and puts it back on its board; ✕ deletes it for good. Done sub-tasks under an open task stay where they are.
 
 ### Lecture notes
 
@@ -137,6 +139,7 @@ frontend/src/
   api.ts           typed fetch client + token storage
   App.tsx          top bar, University, Projects & Personal boards
   Group.tsx        colored card + recursive task rows
+  Archive.tsx      archive window: finished tasks, restore / delete
   InlineInput.tsx  Enter-to-save / Esc-to-cancel input used everywhere
   Segmented.tsx    sliding-pill hook for tabs and semesters
   Login.tsx        sign in / sign up
@@ -153,6 +156,8 @@ frontend/src/
 
 A `Task` belongs to exactly one `Subject` **or** one `Project` (enforced by a DB check constraint) and may point to a parent task for sub-tasks. Personal lists are `Project` rows with `kind = 'personal'` (side projects have `kind = 'project'`), so they hold tasks exactly like projects. Deleting a parent cascades to its sub-tasks; deleting a semester cascades to subjects and tasks.
 
+Ticking a task sets `completed_at` (un-ticking clears it). A top-level task whose `completed_at` is more than 2 days old counts as archived: the boards leave it and its sub-tasks out and `/archive` returns them. Nothing is moved or flagged, so un-ticking a task is all it takes to restore it.
+
 A `LectureNote` belongs to one `Subject` and is deleted with it (and with its semester). References live in the note's markdown as `[[note:<id>|<title>]]` and `[[lecture:<id>|<name>]]`; the id is what links, the text after `|` is only shown if the target has been deleted. Backlinks are found by searching other notes for the reference, so nothing extra is stored.
 
 Every row is scoped to its owner, so users never see each other's data.
@@ -167,7 +172,7 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | GET | `/auth/me` | profile with stats |
 | GET/POST | `/semesters` | list / create |
 | PATCH/DELETE | `/semesters/{id}` | rename / delete |
-| GET | `/semesters/{id}/subjects` | subjects with their tasks (flat list, `parent_id` links sub-tasks) |
+| GET | `/semesters/{id}/subjects` | subjects with their unarchived tasks (flat list, `parent_id` links sub-tasks) |
 | POST | `/semesters/{id}/subjects` | create subject `{name, color}` |
 | PATCH/DELETE | `/subjects/{id}` | update name/color/position / delete |
 | GET | `/projects[?kind=personal]` | side projects (default) or personal lists, with tasks |
@@ -176,6 +181,7 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | POST | `/tasks` | `{title, subject_id \| project_id \| parent_id}` |
 | PATCH | `/tasks/{id}` | `title, notes, done, collapsed, due_date, clear_due_date, position` |
 | DELETE | `/tasks/{id}` | delete (with sub-tasks) |
+| GET | `/archive` | archived tasks (with sub-tasks), grouped by subject / project / list with their `section` |
 | PATCH | `/auth/me` | `{display_name}` |
 | POST | `/auth/password` | `{current_password, new_password}` |
 | POST | `/auth/delete-account` | `{password}` — deletes the user and all their data |
