@@ -194,9 +194,8 @@ button.danger:not(:disabled):active { background: var(--red); color: #fff; }
   background: linear-gradient(135deg, #4285f4, #9b72cb 55%, #d96570); color: #fff;
   font-weight: 700; font-stretch: var(--wide); line-height: 1;
 }
-/* the photo is only 18px wide: scale it up in hard blocks, not a blur */
-.avatar img { display: block; width: 100%; height: 100%; image-rendering: pixelated; animation: pixel-in .4s var(--ease-spring); }
-.avatar.busy { animation: wobble .6s ease-in-out infinite; }
+/* pixel pet: a 16×16 sprite drawn as SVG rects, so it stays sharp at any size */
+.avatar.pet { display: block; background: none; image-rendering: pixelated; animation: pet-in .4s var(--ease-spring); }
 
 /* segmented control with a sliding pill (tabs, semesters, theme) */
 .seg {
@@ -384,13 +383,12 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 
 /* profile picture panel */
 .pfp { display: flex; align-items: center; gap: 20px; }
+.pfp > .avatar { border-radius: 20px; box-shadow: 0 0 0 1px var(--line), 0 10px 24px -14px rgb(0 0 0 / .45); }
 .pfp-controls { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.pfp-controls p { margin: 0; }
+.pfp-kicker { margin: 0; font-size: 13px; color: var(--muted); }
+.pfp .lecture-filter { margin: 0; }
 .pfp-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.pfp-buttons .chip { font-size: 13px; padding: 6px 12px; }
-.pfp-buttons .chip:disabled, .pfp-remove:disabled { opacity: .5; cursor: default; }
-.pfp-remove { padding: 2px 6px; font-size: 12px; color: var(--blue); }
-.pfp-credit a { color: var(--blue); overflow-wrap: anywhere; }
+.pfp-buttons .btn-primary { padding: 7px 14px; font-size: 13px; }
 .pfp .note { margin: 0; }
 
 /* ───────── IP2: three stage columns ───────── */
@@ -731,8 +729,7 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
 @keyframes flash        { 30% { filter: brightness(1.8); } }
 @keyframes grow         { from { transform: scaleX(0); } }
 @keyframes spark-in     { from { opacity: 0; transform: rotate(-140deg) scale(.2); } }
-@keyframes pixel-in     { from { transform: scale(.4) rotate(-20deg); opacity: 0; } }
-@keyframes wobble       { 50% { transform: rotate(-8deg) scale(.94); } }
+@keyframes pet-in       { from { transform: scale(.6) rotate(-12deg); opacity: 0; } }
 @keyframes spin         { to { transform: rotate(360deg); } }
 @keyframes shake        { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @keyframes theme-reveal {
@@ -785,13 +782,19 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
   .editor { padding: 24px 28px 64px; }
 }
 
-/* narrower screens: short tab names (and on narrow tablets no logo text) so the four sections stay on one line */
-@media (min-width: 760px) and (max-width: 1099px) {
+/* narrower screens: short, narrow tab names (and on narrow tablets no logo text) so the five sections stay on one line */
+@media (min-width: 760px) and (max-width: 1279px) {
   .seg.tabs .tab-label { display: none; }
   .seg.tabs .tab-short { display: inline; }
+  .seg.tabs .seg-btn { gap: 5px; padding-left: 9px; padding-right: 9px; font-stretch: var(--narrow); }
 }
 @media (min-width: 760px) and (max-width: 899px) {
   .logo-text { display: none; }
+}
+/* small laptops: log out is back, so the name next to the avatar waits until there's room */
+@media (min-width: 1024px) and (max-width: 1099px) {
+  .me-name { display: none; }
+  .me-btn { padding: 3px; }
 }
 
 /* ───────── phone ───────── */

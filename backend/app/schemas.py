@@ -104,19 +104,14 @@ class ProfileStats(BaseModel):
 class ProfileOut(BaseModel):
     username: str
     display_name: str
-    avatar: str
-    avatar_source: str
+    avatar_seed: str
     created_at: datetime
     stats: ProfileStats
 
 
 class ProfilePatch(BaseModel):
-    display_name: str = Field(max_length=120)
-
-
-class AvatarIn(BaseModel):
-    image: str = Field(max_length=20000, pattern=r"^data:image/png;base64,[A-Za-z0-9+/]+=*$")
-    source: str = Field(default="", max_length=500, pattern=r"^(https://commons\.wikimedia\.org/\S*)?$")
+    display_name: str | None = Field(default=None, max_length=120)
+    avatar_seed: str | None = Field(default=None, pattern=r"^[\w-]{0,32}$")  # "" goes back to the initial
 
 
 class PasswordChange(BaseModel):

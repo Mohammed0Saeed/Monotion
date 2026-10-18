@@ -251,7 +251,7 @@ export default function App() {
           {dark ? <Sun size={16} /> : <Moon size={16} />}
         </button>
         <button className={'me-btn' + (view === 'profile' ? ' active' : '')} onClick={() => setView('profile')} aria-label="Profile">
-          <Avatar name={name} src={me?.avatar} />
+          <Avatar name={name} seed={me?.avatar_seed} />
           <span className="me-name">{name}</span>
         </button>
         <button className="link danger logout" onClick={logout}><LogOut size={14} /> Log out</button>

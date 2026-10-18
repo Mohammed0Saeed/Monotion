@@ -54,8 +54,7 @@ export interface TaskCreate {
 export interface Profile {
   username: string
   display_name: string
-  avatar: string          // pixelated photo (PNG data URL), '' for the initial letter
-  avatar_source: string   // the photo's page on Wikimedia Commons
+  avatar_seed: string     // pixel pet (see pets.ts), '' for the initial letter
   created_at: string
   stats: {
     semesters: number

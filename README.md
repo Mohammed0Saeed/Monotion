@@ -8,7 +8,7 @@ A local, self-hosted task manager and lecture notebook with a Notion-dark look �
 - **IP2** — the IP robotics project board: *Data collection*, *Training* and *Evaluation* columns whose tasks are open, in progress or done
 - **Archive** — finished tasks leave their board 2 days after you tick them off; restore or delete them from the archive window
 - **Journal** *(experimental)* — dated entries with an optional mood, saved as you type
-- **Profile** — pixelated animal profile picture, display name, password, appearance (system / light / dark), stats, log out, delete account
+- **Profile** — pixel-pet profile picture (bird, cat or horse), display name, password, appearance (system / light / dark), stats, log out, delete account
 
 Works on desktop, iPad and iPhone, in light or dark mode.
 
@@ -84,7 +84,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 ### Profile picture
 
-*Profile → Profile picture* gives you a random pixelated photo instead of your initial: *Surprise me* picks a bird, cat or horse, or press 🐦 *Bird*, 🐱 *Cat* or 🐴 *Horse*. The browser fetches a random featured or quality photo of that animal from Wikimedia Commons, crops the middle square and shrinks it to 18×18 pixels, which is stored with your profile (about 1.5 KB) and shown in blocky pixels in the top bar and profile. A link under it credits the original photo. *Use my initial* goes back to the letter. Randomizing needs internet access; once set, the picture works offline.
+*Profile → Profile picture* swaps your initial for a 16×16 pixel pet: pick *Bird*, *Cat* or *Horse* and press *New bird* / *New cat* / *New horse* to roll another one. Each pet is drawn from a short random seed saved with your profile, so it stays the same everywhere until you reroll it, and it's drawn in the browser, so it works offline. Birds come in seven kinds (blue jay, cardinal, canary, parrot, robin, dove, flamingo), sometimes with a crest or sleepy; cats in seven coats and five patterns (tabby, tuxedo, patched, calico) with different eyes and moods; horses in seven coats (bay, chestnut, black, grey, palomino, dun, white), with a blaze or star, sometimes sleepy, and now and then a rare unicorn. The line above the buttons describes the one you have. *Use my initial* goes back to the letter. Cats and birds are the same sprites as Puffy's avatars, so a seed draws the same pet in both.
 
 ### Light and dark mode
 
@@ -161,8 +161,8 @@ frontend/src/
   Notes.tsx        lecture notes: list, editor, reference picker (loaded on demand)
   markdown.ts      markdown + KaTeX + references → sanitised HTML
   theme.ts         light/dark/system theme with the circular reveal
-  Avatar.tsx       pixelated profile picture or initial-letter avatar
-  pixelAvatar.ts   random bird / cat / horse photo from Wikimedia Commons, pixelated on a canvas
+  Avatar.tsx       pixel pet or initial-letter avatar
+  pets.ts          seeded 16×16 bird / cat / horse sprites
   styles.css       all styles, light and dark themes
 ```
 
@@ -196,8 +196,7 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | PATCH | `/tasks/{id}` | `title, notes, done, collapsed, due_date, clear_due_date, position` |
 | DELETE | `/tasks/{id}` | delete (with sub-tasks) |
 | GET | `/archive` | archived tasks (with sub-tasks), grouped by subject / project / list with their `section` |
-| PATCH | `/auth/me` | `{display_name}` |
-| PUT/DELETE | `/auth/me/avatar` | set `{image, source}` (PNG data URL, Commons page) / back to the initial |
+| PATCH | `/auth/me` | `{display_name?, avatar_seed?}`, `avatar_seed` is the pixel pet (`bird-…`, `horse-…`, otherwise a cat), `""` for the initial |
 | POST | `/auth/password` | `{current_password, new_password}` |
 | POST | `/auth/delete-account` | `{password}` — deletes the user and all their data |
 | GET/POST | `/journal` | list (newest first) / create `{entry_date?}` |

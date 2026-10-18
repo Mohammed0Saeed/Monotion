@@ -6,7 +6,7 @@ from ..auth import current_user, hash_password, make_token, verify_password
 from ..config import settings
 from ..db import get_db
 from ..models import JournalEntry, Project, Semester, Subject, Task, User
-from ..schemas import (AvatarIn, Credentials, PasswordChange, PasswordConfirm, ProfileOut,
+from ..schemas import (Credentials, PasswordChange, PasswordConfirm, ProfileOut,
                        ProfilePatch, ProfileStats, Token)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -51,7 +51,7 @@ def profile(db: Session, user: User) -> ProfileOut:
                               .where(JournalEntry.user_id == user.id)),
     )
     return ProfileOut(username=user.username, display_name=user.display_name,
-                      avatar=user.avatar, avatar_source=user.avatar_source,
+                      avatar_seed=user.avatar_seed,
                       created_at=user.created_at, stats=stats)
 
 
@@ -62,21 +62,10 @@ def me(db: Session = Depends(get_db), user: User = Depends(current_user)):
 
 @router.patch("/me", response_model=ProfileOut)
 def update_me(body: ProfilePatch, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    user.display_name = body.display_name.strip()
-    db.commit()
-    return profile(db, user)
-
-
-@router.put("/me/avatar", response_model=ProfileOut)
-def set_avatar(body: AvatarIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    user.avatar, user.avatar_source = body.image, body.source
-    db.commit()
-    return profile(db, user)
-
-
-@router.delete("/me/avatar", response_model=ProfileOut)
-def clear_avatar(db: Session = Depends(get_db), user: User = Depends(current_user)):
-    user.avatar = user.avatar_source = ""
+    if body.display_name is not None:
+        user.display_name = body.display_name.strip()
+    if body.avatar_seed is not None:
+        user.avatar_seed = body.avatar_seed
     db.commit()
     return profile(db, user)
 

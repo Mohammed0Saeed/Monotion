@@ -1,19 +1,13 @@
 import { useState, type CSSProperties, type FormEvent, type MouseEvent } from 'react'
-import { Dices, Laptop, LogOut, Moon, Sun } from 'lucide-react'
+import { Laptop, LogOut, Moon, Shuffle, Sun } from 'lucide-react'
 import { api } from './api'
 import Avatar from './Avatar'
 import { COLORS } from './Group'
-import { ANIMALS, randomPixelAvatar, type Animal } from './pixelAvatar'
+import { makePet, randomPetSeed, speciesOf, SPECIES, type Species } from './pets'
 import { headingColor, setHeadingColor, type HeadingColor } from './headings'
 import { useSlidingPill } from './Segmented'
 import type { ThemePref } from './theme'
 import type { Profile as ProfileData } from './types'
-
-const ANIMAL_LABEL: Record<Animal, string> = { bird: '🐦 Bird', cat: '🐱 Cat', horse: '🐴 Horse' }
-
-/** "File:Red_kite_in_flight.jpg" → "Red kite in flight" */
-const photoTitle = (page: string) =>
-  decodeURIComponent(page.split('/File:')[1] ?? 'the photo').replace(/_/g, ' ').replace(/\.\w+$/, '')
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
   { id: 'system', label: 'System', Icon: Laptop },
@@ -46,7 +40,8 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
   const [next, setNext] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [deletePw, setDeletePw] = useState('')
-  const nameForm = useForm(), pwForm = useForm(), deleteForm = useForm(), avatarForm = useForm()
+  const nameForm = useForm(), pwForm = useForm(), deleteForm = useForm()
+  const [avatarError, setAvatarError] = useState('')
   const [themeRef, pill] = useSlidingPill<HTMLDivElement>(theme)
   const [headings, setHeadings] = useState(headingColor)
 
@@ -57,16 +52,18 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
     e.preventDefault()
     nameForm.run(async () => { onChange(await api.updateMe(displayName)); return 'Name saved.' })
   }
-  function randomizeAvatar(animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)]) {
-    avatarForm.run(async () => {
-      const { image, source } = await randomPixelAvatar(animal)
-      onChange(await api.setAvatar(image, source))
-      return `New ${animal}!`
-    })
+  const species = me.avatar_seed ? speciesOf(me.avatar_seed) : null
+  const speciesLabel = SPECIES.find(s => s.key === (species ?? 'cat'))!.label.toLowerCase()
+
+  // shows at once (in the top bar too), then saves; seed '' goes back to the initial
+  async function setAvatar(seed: string) {
+    const before = me
+    onChange({ ...me, avatar_seed: seed })
+    setAvatarError('')
+    try { onChange(await api.updateAvatar(seed)) }
+    catch (err) { onChange(before); setAvatarError(err instanceof Error ? err.message : String(err)) }
   }
-  function removeAvatar() {
-    avatarForm.run(async () => { onChange(await api.clearAvatar()); return 'Back to your initial.' })
-  }
+  const reroll = (kind: Species = species ?? 'cat') => void setAvatar(randomPetSeed(kind))
   function changePassword(e: FormEvent) {
     e.preventDefault()
     pwForm.run(async () => {
@@ -93,7 +90,7 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
   return (
     <div className="profile">
       <header className="profile-head">
-        <Avatar name={me.display_name || me.username} src={me.avatar} size={64} busy={avatarForm.busy} />
+        <Avatar name={me.display_name || me.username} seed={me.avatar_seed} size={64} />
         <div>
           <h1>{me.display_name || me.username}</h1>
           <p className="muted">@{me.username}</p>
@@ -104,26 +101,22 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
       <section className="panel">
         <h2>Profile picture</h2>
         <div className="pfp">
-          <Avatar name={me.display_name || me.username} src={me.avatar} size={88} busy={avatarForm.busy} />
+          <Avatar name={me.display_name || me.username} seed={me.avatar_seed} size={96} />
           <div className="pfp-controls">
-            <div className="pfp-buttons">
-              <button className="btn-primary" disabled={avatarForm.busy} onClick={() => randomizeAvatar()}>
-                <Dices size={15} /> Surprise me
-              </button>
-              {ANIMALS.map(a => (
-                <button key={a} className="chip" disabled={avatarForm.busy} onClick={() => randomizeAvatar(a)}>{ANIMAL_LABEL[a]}</button>
+            <p className="pfp-kicker">{me.avatar_seed ? makePet(me.avatar_seed).description : 'Your initial, for now'}</p>
+            <div className="lecture-filter" role="radiogroup" aria-label="Pet">
+              {SPECIES.map(s => (
+                <button key={s.key} role="radio" aria-checked={species === s.key} className={'chip' + (species === s.key ? ' on' : '')}
+                        onClick={() => species !== s.key && reroll(s.key)}>{s.label}</button>
               ))}
             </div>
-            <p className="muted small">
-              A random photo of a bird, cat or horse from Wikimedia Commons, squashed into 18×18 pixels.
-              {me.avatar && <> <button className="link pfp-remove" disabled={avatarForm.busy} onClick={removeAvatar}>Use my initial</button></>}
-            </p>
-            {me.avatar_source && (
-              <p className="muted small pfp-credit">
-                Pixelated from <a href={me.avatar_source} target="_blank" rel="noreferrer">{photoTitle(me.avatar_source)}</a>
-              </p>
-            )}
-            {avatarForm.note}
+            <div className="pfp-buttons">
+              <button className="btn-primary" onClick={() => reroll()} title={`Generate a different ${speciesLabel}`}>
+                <Shuffle size={15} /> New {speciesLabel}
+              </button>
+              {me.avatar_seed && <button className="link" onClick={() => void setAvatar('')}>Use my initial</button>}
+            </div>
+            {avatarError && <p className="note error" role="status">{avatarError}</p>}
           </div>
         </div>
       </section>
