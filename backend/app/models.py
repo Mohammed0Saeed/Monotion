@@ -13,6 +13,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(128))
     display_name: Mapped[str] = mapped_column(String(120), default="", server_default="")
+    avatar: Mapped[str] = mapped_column(Text, default="", server_default="")  # pixelated photo as a PNG data URL
+    avatar_source: Mapped[str] = mapped_column(String(500), default="", server_default="")  # the photo's Commons page
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

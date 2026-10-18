@@ -1,12 +1,19 @@
 import { useState, type CSSProperties, type FormEvent, type MouseEvent } from 'react'
-import { Laptop, LogOut, Moon, Sun } from 'lucide-react'
+import { Dices, Laptop, LogOut, Moon, Sun } from 'lucide-react'
 import { api } from './api'
 import Avatar from './Avatar'
 import { COLORS } from './Group'
+import { ANIMALS, randomPixelAvatar, type Animal } from './pixelAvatar'
 import { headingColor, setHeadingColor, type HeadingColor } from './headings'
 import { useSlidingPill } from './Segmented'
 import type { ThemePref } from './theme'
 import type { Profile as ProfileData } from './types'
+
+const ANIMAL_LABEL: Record<Animal, string> = { bird: '🐦 Bird', cat: '🐱 Cat', horse: '🐴 Horse' }
+
+/** "File:Red_kite_in_flight.jpg" → "Red kite in flight" */
+const photoTitle = (page: string) =>
+  decodeURIComponent(page.split('/File:')[1] ?? 'the photo').replace(/_/g, ' ').replace(/\.\w+$/, '')
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
   { id: 'system', label: 'System', Icon: Laptop },
@@ -39,7 +46,7 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
   const [next, setNext] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [deletePw, setDeletePw] = useState('')
-  const nameForm = useForm(), pwForm = useForm(), deleteForm = useForm()
+  const nameForm = useForm(), pwForm = useForm(), deleteForm = useForm(), avatarForm = useForm()
   const [themeRef, pill] = useSlidingPill<HTMLDivElement>(theme)
   const [headings, setHeadings] = useState(headingColor)
 
@@ -49,6 +56,16 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
   function saveName(e: FormEvent) {
     e.preventDefault()
     nameForm.run(async () => { onChange(await api.updateMe(displayName)); return 'Name saved.' })
+  }
+  function randomizeAvatar(animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)]) {
+    avatarForm.run(async () => {
+      const { image, source } = await randomPixelAvatar(animal)
+      onChange(await api.setAvatar(image, source))
+      return `New ${animal}!`
+    })
+  }
+  function removeAvatar() {
+    avatarForm.run(async () => { onChange(await api.clearAvatar()); return 'Back to your initial.' })
   }
   function changePassword(e: FormEvent) {
     e.preventDefault()
@@ -76,13 +93,40 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
   return (
     <div className="profile">
       <header className="profile-head">
-        <Avatar name={me.display_name || me.username} size={64} />
+        <Avatar name={me.display_name || me.username} src={me.avatar} size={64} busy={avatarForm.busy} />
         <div>
           <h1>{me.display_name || me.username}</h1>
           <p className="muted">@{me.username}</p>
           <p className="muted">Member since {since}</p>
         </div>
       </header>
+
+      <section className="panel">
+        <h2>Profile picture</h2>
+        <div className="pfp">
+          <Avatar name={me.display_name || me.username} src={me.avatar} size={88} busy={avatarForm.busy} />
+          <div className="pfp-controls">
+            <div className="pfp-buttons">
+              <button className="btn-primary" disabled={avatarForm.busy} onClick={() => randomizeAvatar()}>
+                <Dices size={15} /> Surprise me
+              </button>
+              {ANIMALS.map(a => (
+                <button key={a} className="chip" disabled={avatarForm.busy} onClick={() => randomizeAvatar(a)}>{ANIMAL_LABEL[a]}</button>
+              ))}
+            </div>
+            <p className="muted small">
+              A random photo of a bird, cat or horse from Wikimedia Commons, squashed into 18×18 pixels.
+              {me.avatar && <> <button className="link pfp-remove" disabled={avatarForm.busy} onClick={removeAvatar}>Use my initial</button></>}
+            </p>
+            {me.avatar_source && (
+              <p className="muted small pfp-credit">
+                Pixelated from <a href={me.avatar_source} target="_blank" rel="noreferrer">{photoTitle(me.avatar_source)}</a>
+              </p>
+            )}
+            {avatarForm.note}
+          </div>
+        </div>
+      </section>
 
       <section className="panel">
         <h2>Progress</h2>

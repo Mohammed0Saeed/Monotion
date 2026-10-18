@@ -50,6 +50,8 @@ export const api = {
 
   me: () => request<Profile>('GET', '/auth/me'),
   updateMe: (display_name: string) => request<Profile>('PATCH', '/auth/me', { display_name }),
+  setAvatar: (image: string, source: string) => request<Profile>('PUT', '/auth/me/avatar', { image, source }),
+  clearAvatar: () => request<Profile>('DELETE', '/auth/me/avatar'),
   changePassword: (current_password: string, new_password: string) =>
     request('POST', '/auth/password', { current_password, new_password }),
   deleteAccount: (password: string) => request('POST', '/auth/delete-account', { password }),

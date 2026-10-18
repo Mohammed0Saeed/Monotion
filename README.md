@@ -8,7 +8,7 @@ A local, self-hosted task manager and lecture notebook with a Notion-dark look �
 - **IP2** — the IP robotics project board: *Data collection*, *Training* and *Evaluation* columns whose tasks are open, in progress or done
 - **Archive** — finished tasks leave their board 2 days after you tick them off; restore or delete them from the archive window
 - **Journal** *(experimental)* — dated entries with an optional mood, saved as you type
-- **Profile** — display name, password, appearance (system / light / dark), stats, log out, delete account
+- **Profile** — pixelated animal profile picture, display name, password, appearance (system / light / dark), stats, log out, delete account
 
 Works on desktop, iPad and iPhone, in light or dark mode.
 
@@ -81,6 +81,10 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 ### Journal (experimental)
 
 *New entry for today* creates an entry dated today; change the date with the date field. Title, text and mood save automatically shortly after you stop typing (and when you switch entries or leave the tab). Pick a mood again to clear it. The data format may still change.
+
+### Profile picture
+
+*Profile → Profile picture* gives you a random pixelated photo instead of your initial: *Surprise me* picks a bird, cat or horse, or press 🐦 *Bird*, 🐱 *Cat* or 🐴 *Horse*. The browser fetches a random featured or quality photo of that animal from Wikimedia Commons, crops the middle square and shrinks it to 18×18 pixels, which is stored with your profile (about 1.5 KB) and shown in blocky pixels in the top bar and profile. A link under it credits the original photo. *Use my initial* goes back to the letter. Randomizing needs internet access; once set, the picture works offline.
 
 ### Light and dark mode
 
@@ -157,7 +161,8 @@ frontend/src/
   Notes.tsx        lecture notes: list, editor, reference picker (loaded on demand)
   markdown.ts      markdown + KaTeX + references → sanitised HTML
   theme.ts         light/dark/system theme with the circular reveal
-  Avatar.tsx       initial-letter avatar
+  Avatar.tsx       pixelated profile picture or initial-letter avatar
+  pixelAvatar.ts   random bird / cat / horse photo from Wikimedia Commons, pixelated on a canvas
   styles.css       all styles, light and dark themes
 ```
 
@@ -192,6 +197,7 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | DELETE | `/tasks/{id}` | delete (with sub-tasks) |
 | GET | `/archive` | archived tasks (with sub-tasks), grouped by subject / project / list with their `section` |
 | PATCH | `/auth/me` | `{display_name}` |
+| PUT/DELETE | `/auth/me/avatar` | set `{image, source}` (PNG data URL, Commons page) / back to the initial |
 | POST | `/auth/password` | `{current_password, new_password}` |
 | POST | `/auth/delete-account` | `{password}` — deletes the user and all their data |
 | GET/POST | `/journal` | list (newest first) / create `{entry_date?}` |
