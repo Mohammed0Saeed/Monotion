@@ -167,6 +167,9 @@ button.danger:not(:disabled):active { background: var(--red); color: #fff; }
   .ref-picker li:hover { background: rgb(var(--fg) / .06); }
   .ref:hover { border-bottom-style: solid; }
   .code-copy:hover { background: rgb(var(--fg) / .08); color: var(--ink); }
+  .grade-row:hover { background: rgb(var(--fg) / .04); }
+  .grade-row:hover .g-delete { opacity: 1; }
+  .gfield:not(:focus):not(.g-nodate):hover { border-color: rgb(var(--fg) / .14); }
   .ip2-status:hover { filter: brightness(1.15); background-color: rgb(var(--fg) / .12); }
   .ip2-status[data-status="progress"]:hover { background: color-mix(in srgb, var(--ac) 28%, transparent); }
   .ip2-status[data-status="done"]:hover { background: var(--ac); }
@@ -390,6 +393,71 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 .pfp-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pfp-buttons .btn-primary { padding: 7px 14px; font-size: 13px; }
 .pfp .note { margin: 0; }
+
+/* ───────── grades: one editable row per exam ───────── */
+.grades { max-width: 1400px; margin: 0 auto; padding: 20px 24px 40px; animation: fade-in .25s both; }
+.grade-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0 0 22px; }
+.tile { margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--raised); border: 1px solid var(--line); }
+.tile dt { font-size: 12px; color: var(--muted); }
+.tile dd { margin: 4px 0 2px; display: flex; align-items: baseline; gap: 8px; }
+.tile dd strong { font-size: 28px; font-weight: 700; font-stretch: var(--wide); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile dd span { font-size: 13px; color: var(--muted); }
+.tile dd.tile-note { margin: 0; font-size: 12px; color: var(--muted); font-stretch: var(--narrow); }
+
+.grade-table { --gcols: minmax(160px, 2fr) minmax(118px, 1fr) minmax(118px, 1fr) 146px 84px minmax(150px, 1fr) 28px; }
+.grade-head, .grade-row { display: grid; grid-template-columns: var(--gcols); gap: 8px; align-items: center; }
+.grade-head { padding: 0 10px 6px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.grade-row {
+  position: relative; padding: 4px 10px; border-radius: 8px; transition: background-color .12s;
+  animation: row-in .22s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 25ms);
+}
+.grade-row + .grade-row { margin-top: 2px; }
+.gcell { display: block; min-width: 0; }
+.gcell-label { display: none; }
+.gfield {
+  width: 100%; min-width: 0; padding: 6px 8px; border-radius: 6px; outline: none;
+  border: 1px solid transparent; background: transparent; color: var(--ink);
+  font: inherit; font-size: 13px; font-stretch: var(--narrow); transition: border-color .15s, background-color .15s, box-shadow .15s;
+}
+select.gfield { cursor: pointer; }
+.gfield:focus { border-color: var(--blue); background: var(--field); box-shadow: 0 0 0 3px rgb(35 131 226 / .2); }
+.g-module .gfield { font-weight: 600; }
+.g-nodate { display: block; color: var(--muted); font-size: 12px; }
+.g-credits-box { position: relative; display: block; }
+.g-credits-box .gfield { padding-right: 30px; font-variant-numeric: tabular-nums; }
+.g-unit { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); pointer-events: none; }
+.g-delete { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; opacity: 0; transition: opacity .12s, background-color .15s, color .15s; }
+.grade-row:focus-within .g-delete { opacity: 1; }
+/* the grade shows how the module went */
+.grade-row .g-result .gfield { font-weight: 600; }
+.grade-row[data-status="passed"] .g-result .gfield { color: #3fb27f; }
+[data-theme="light"] .grade-row[data-status="passed"] .g-result .gfield { color: #2f7d55; }
+.grade-row[data-status="failed"] .g-result .gfield { color: var(--danger-ink); }
+.grade-row[data-status="pending"] .g-result .gfield { color: var(--muted); font-weight: 400; }
+.grade-row::before {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: transparent;
+}
+.grade-row[data-status="passed"]::before { background: #3fb27f; }
+.grade-row[data-status="failed"]::before { background: var(--red); }
+
+.grade-add { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 4px 10px; color: rgb(var(--fg) / .5); }
+.grade-add .gfield { flex: 1; }
+.grade-add .gfield::placeholder { color: rgb(var(--fg) / .45); }
+.grade-hint { max-width: 80ch; margin: 18px 10px 0; }
+.grades > .note { margin-left: 10px; }
+
+/* profile: GPA and credits */
+.gpa-hero { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.gpa-hero p { margin: 0; }
+.gpa-big { display: flex; align-items: baseline; gap: 8px; font-size: 34px; font-weight: 700; font-stretch: var(--wide); font-variant-numeric: tabular-nums; line-height: 1.15; }
+.gpa-big span { font-size: 14px; font-weight: 400; font-stretch: var(--narrow); color: var(--muted); }
+.gpa-table { width: 100%; margin-top: 18px; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.gpa-table caption { text-align: left; padding-bottom: 6px; font-size: 13px; font-weight: 600; }
+.gpa-table th { text-align: left; padding: 6px 0; font-size: 12px; font-weight: 400; color: var(--muted); border-bottom: 1px solid var(--line); }
+.gpa-table td { padding: 7px 0; border-bottom: 1px solid var(--line); }
+.gpa-table :is(th, td):not(:first-child) { text-align: right; width: 22%; }
+.gpa-table tr:last-child td { border-bottom: 0; }
+.panel .gpa-table + p.small { margin-top: 14px; }
 
 /* ───────── IP2: three stage columns ───────── */
 .ip2 { max-width: 1400px; margin: 0 auto; padding: 24px 24px 0; }
@@ -759,6 +827,8 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
   .ref-picker li { padding: 10px 8px; }
   .code-copy { padding: 6px 10px; }
   .ip2-status { padding: 7px 11px; }
+  .g-delete { opacity: 1; width: 36px; height: 36px; }
+  .gfield { padding-top: 9px; padding-bottom: 9px; font-size: 16px; }
   /* 16px stops iOS Safari from zooming in when an input is focused */
   input, textarea, .inline-input, .inline-input.seg-input, .field input, .text-input, .date-input { font-size: 16px; }
   .inline-input.group-edit { font-size: 19px; }
@@ -791,6 +861,26 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
 @media (min-width: 760px) and (max-width: 899px) {
   .logo-text { display: none; }
 }
+/* grades below 1100px: each exam is a card with labelled fields */
+@media (max-width: 1099px) {
+  .grade-head { display: none; }
+  .grade-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; padding: 10px 12px 12px 14px;
+    background: var(--raised); border: 1px solid var(--line); border-radius: 10px;
+  }
+  .grade-row + .grade-row { margin-top: 10px; }
+  .grade-row::before { top: 12px; bottom: 12px; }
+  .g-module { grid-column: 1 / -1; padding-right: 36px; }
+  .g-module .gfield { font-size: 15px; }
+  .gcell-label { display: block; margin: 0 0 2px 9px; font-size: 11px; color: var(--muted); }
+  .g-module .gcell-label { display: none; }
+  .gfield { border-color: rgb(var(--fg) / .1); background: var(--field); }
+  .g-nodate { border-color: transparent; background: transparent; }
+  .g-delete { position: absolute; top: 10px; right: 10px; opacity: 1; }
+  .grade-add { margin-top: 12px; padding: 0 2px; }
+  .grade-add .gfield { border-style: dashed; }
+}
+
 /* small laptops: log out is back, so the name next to the avatar waits until there's room */
 @media (min-width: 1024px) and (max-width: 1099px) {
   .me-name { display: none; }
@@ -845,6 +935,15 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
   .ref-picker { width: min(300px, 100%); }
   .ip2 { padding: 14px 12px 0; }
   .pfp { flex-direction: column; align-items: flex-start; }
+  .grades { padding: 14px 12px 32px; }
+  .grade-stats { gap: 8px; margin-bottom: 16px; }
+  .tile { padding: 10px 12px; }
+  .tile dd { flex-wrap: wrap; gap: 0 6px; }
+  .tile dd strong { font-size: 22px; }
+  .tile dd span { font-size: 11px; }
+  .tile dd.tile-note { display: none; }
+  .grade-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gpa-hero { grid-template-columns: minmax(0, 1fr); }
   .ip2-board { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 14px; }
 
   /* the archive takes the whole screen */

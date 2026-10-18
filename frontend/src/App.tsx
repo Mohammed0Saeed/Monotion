@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
 import {
-  Archive as ArchiveIcon, Bot, FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
+  Archive as ArchiveIcon, Award, Bot, FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
   UserRound,
 } from 'lucide-react'
 import { api, auth } from './api'
@@ -14,10 +14,13 @@ import Journal from './Journal'
 import IP2 from './IP2'
 import Profile from './Profile'
 import Archive from './Archive'
+import Grades from './Grades'
 import { resolveTheme, useTheme } from './theme'
 import type { ArchiveSection, GroupData, Kind, Profile as ProfileData, Semester, Task } from './types'
 
 type View = 'university' | 'projects' | 'personal' | 'ip2' | 'journal' | 'profile'
+
+type UniMode = 'tasks' | 'notes' | 'grades'
 
 /** which part of the archive opens from each tab */
 const ARCHIVE_OF: Partial<Record<View, ArchiveSection>> = { university: 'university', projects: 'project', personal: 'personal' }
@@ -125,7 +128,10 @@ function University() {
   const [renaming, setRenaming] = useState(false)
   const semester = semesters?.find(s => s.id === current) ?? semesters?.[0]
   const [segRef, pill] = useSlidingPill<HTMLDivElement>(`${semester?.id}-${renaming}-${semesters?.length}`)
-  const [mode, setMode] = useState<'tasks' | 'notes'>(() => (localStorage.getItem('maki_uni_mode') === 'notes' ? 'notes' : 'tasks'))
+  const [mode, setMode] = useState<UniMode>(() => {
+    const saved = localStorage.getItem('maki_uni_mode')
+    return saved === 'notes' || saved === 'grades' ? saved : 'tasks'
+  })
   const [modeRef, modePill] = useSlidingPill<HTMLDivElement>(`${mode}-${!!semesters?.length}`)
 
   useEffect(() => { api.semesters().then(setSemesters) }, [])
@@ -146,7 +152,7 @@ function University() {
   }
   async function deleteSemester() {
     if (!semester) return
-    if (!confirm(`Delete "${semester.name}" with all its subjects, tasks and notes?`)) return
+    if (!confirm(`Delete "${semester.name}" with all its subjects, tasks, notes and grades?`)) return
     await api.deleteSemester(semester.id)
     const rest = list.filter(s => s.id !== semester.id)
     setSemesters(rest); setCurrent(rest[0]?.id ?? null)
@@ -169,12 +175,14 @@ function University() {
   return (
     <div className="uni" data-mode={mode}>
       <div className="subbar">
-        <div className="seg" ref={modeRef} role="tablist" aria-label="Tasks or notes">
+        <div className="seg" ref={modeRef} role="tablist" aria-label="Tasks, notes or grades">
           <span className="seg-pill" style={modePill} />
           <button role="tab" aria-selected={mode === 'tasks'} className="seg-btn" data-active={mode === 'tasks'}
                   onClick={() => setMode('tasks')}><ListChecks size={15} /> Tasks</button>
           <button role="tab" aria-selected={mode === 'notes'} className="seg-btn" data-active={mode === 'notes'}
                   onClick={() => setMode('notes')}><NotebookText size={15} /> Notes</button>
+          <button role="tab" aria-selected={mode === 'grades'} className="seg-btn" data-active={mode === 'grades'}
+                  onClick={() => setMode('grades')}><Award size={15} /> Grades</button>
         </div>
         <span className="subbar-sep" aria-hidden="true" />
         <div className="seg" ref={segRef} role="tablist" aria-label="Semesters">
@@ -193,11 +201,13 @@ function University() {
           <button className="link danger" onClick={deleteSemester}><Trash2 size={14} /> Delete</button>
         </span>
       </div>
-      {mode === 'tasks'
-        ? <Board key={semester!.id} kind="subject" semester={semester} />
-        : <Suspense fallback={<Loading />}>
-            <Notes semester={semester!} onSemester={setCurrent} onTasks={() => setMode('tasks')} />
-          </Suspense>}
+      {mode === 'tasks' && <Board key={semester!.id} kind="subject" semester={semester} />}
+      {mode === 'notes' && (
+        <Suspense fallback={<Loading />}>
+          <Notes semester={semester!} onSemester={setCurrent} onTasks={() => setMode('tasks')} />
+        </Suspense>
+      )}
+      {mode === 'grades' && <Grades semester={semester!} />}
     </div>
   )
 }

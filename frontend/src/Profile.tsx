@@ -1,19 +1,85 @@
-import { useState, type CSSProperties, type FormEvent, type MouseEvent } from 'react'
+import { useEffect, useState, type CSSProperties, type FormEvent, type MouseEvent } from 'react'
 import { Laptop, LogOut, Moon, Shuffle, Sun } from 'lucide-react'
 import { api } from './api'
 import Avatar from './Avatar'
 import { COLORS } from './Group'
+import { fmtCredits, fmtGrade, gradeWord, MODULE_TYPES, summarize } from './gpa'
 import { makePet, randomPetSeed, speciesOf, SPECIES, type Species } from './pets'
 import { headingColor, setHeadingColor, type HeadingColor } from './headings'
 import { useSlidingPill } from './Segmented'
 import type { ThemePref } from './theme'
-import type { Profile as ProfileData } from './types'
+import type { Grade, Profile as ProfileData, Semester } from './types'
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
   { id: 'system', label: 'System', Icon: Laptop },
   { id: 'light', label: 'Light', Icon: Sun },
   { id: 'dark', label: 'Dark', Icon: Moon },
 ]
+
+/** GPA and credit points over every semester, split by module type and by semester */
+function GradesPanel() {
+  const [data, setData] = useState<{ grades: Grade[]; semesters: Semester[] } | null>(null)
+  useEffect(() => {
+    Promise.all([api.allGrades(), api.semesters()]).then(([grades, semesters]) => setData({ grades, semesters }))
+  }, [])
+
+  if (!data) return <section className="panel"><h2>Grades</h2><p className="muted small">Loading…</p></section>
+  const { grades, semesters } = data
+  if (!grades.length) {
+    return (
+      <section className="panel">
+        <h2>Grades</h2>
+        <p className="muted small">Add your exams under University → Grades to see your GPA and credit points here.</p>
+      </section>
+    )
+  }
+  const total = summarize(grades)
+  const rows = (label: string, list: Grade[]) => {
+    const s = summarize(list)
+    return (
+      <tr key={label}>
+        <td>{label}</td>
+        <td>{s.passed}</td>
+        <td>{fmtCredits(s.credits)} CP</td>
+        <td title={s.gpa === null ? undefined : `exactly ${fmtGrade(s.gpa, 2)}`}>{fmtGrade(s.gpaOfficial)}</td>
+      </tr>
+    )
+  }
+  const head = (first: string) => <thead><tr><th>{first}</th><th>Passed</th><th>Credits</th><th>GPA</th></tr></thead>
+
+  return (
+    <section className="panel">
+      <h2>Grades</h2>
+      <div className="gpa-hero">
+        <div>
+          <p className="gpa-big">{fmtGrade(total.gpaOfficial)}{total.gpaOfficial !== null && <span>{gradeWord(total.gpaOfficial)}</span>}</p>
+          <p className="muted small">{total.gpa === null ? 'GPA, once a module is graded' : `GPA · exactly ${fmtGrade(total.gpa, 2)}`}</p>
+        </div>
+        <div>
+          <p className="gpa-big">{fmtCredits(total.credits)}<span>CP</span></p>
+          <p className="muted small">
+            credit points from {total.passed} module{total.passed === 1 ? '' : 's'}
+            {total.pendingCredits > 0 && ` · ${fmtCredits(total.pendingCredits)} CP waiting for a grade`}
+          </p>
+        </div>
+      </div>
+      <table className="gpa-table">
+        <caption>By module type</caption>
+        {head('Type')}
+        <tbody>{MODULE_TYPES.map(t => rows(t.label, grades.filter(g => g.module_type === t.id)))}</tbody>
+      </table>
+      <table className="gpa-table">
+        <caption>By semester</caption>
+        {head('Semester')}
+        <tbody>
+          {semesters.filter(s => grades.some(g => g.semester_id === s.id))
+            .map(s => rows(s.name, grades.filter(g => g.semester_id === s.id)))}
+        </tbody>
+      </table>
+      <p className="muted small">Weighted by credit points and cut after the first decimal, as on a German transcript.</p>
+    </section>
+  )
+}
 
 function useForm() {
   const [busy, setBusy] = useState(false)
@@ -137,6 +203,8 @@ export default function Profile({ me, onChange, theme, onTheme, onLogout }: {
           <div><dt>Journal entries</dt><dd>{stats.journal_entries}</dd></div>
         </dl>
       </section>
+
+      <GradesPanel />
 
       <section className="panel">
         <h2>Appearance</h2>

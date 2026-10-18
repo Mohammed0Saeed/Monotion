@@ -1,7 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import (Boolean, CheckConstraint, Date, DateTime, ForeignKey,
-                        Integer, String, Text, func)
+                        Integer, Numeric, String, Text, func)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -103,3 +103,19 @@ class IP2Task(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Grade(Base):
+    """An exam of one module in a semester, with its credit points and result."""
+    __tablename__ = "grades"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    semester_id: Mapped[int] = mapped_column(ForeignKey("semesters.id", ondelete="CASCADE"), index=True)
+    module: Mapped[str] = mapped_column(String(200))
+    module_type: Mapped[str] = mapped_column(String(16), default="mandatory")  # mandatory | subelective | elective | general
+    exam_type: Mapped[str] = mapped_column(String(16), default="written")      # written | oral | submission
+    exam_date: Mapped[date | None] = mapped_column(Date)                       # none for submissions
+    # "pending", a German grade "1.0".."5.0", or "passed" / "failed" for ungraded modules
+    result: Mapped[str] = mapped_column(String(8), default="pending")
+    credits: Mapped[float] = mapped_column(Numeric(4, 1, asdecimal=False), default=5)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

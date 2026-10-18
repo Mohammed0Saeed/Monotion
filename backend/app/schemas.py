@@ -206,3 +206,40 @@ class IP2TaskPatch(BaseModel):
     stage: IP2Stage | None = None
     title: str | None = Field(default=None, min_length=1, max_length=500)
     status: IP2Status | None = None
+
+
+ModuleType = Literal["mandatory", "subelective", "elective", "general"]
+ExamType = Literal["written", "oral", "submission"]
+GradeResult = Literal["pending", "1.0", "1.3", "1.7", "2.0", "2.3", "2.7", "3.0", "3.3", "3.7", "4.0", "5.0",
+                      "passed", "failed"]
+
+
+class GradeOut(ORM):
+    id: int
+    semester_id: int
+    module: str
+    module_type: ModuleType
+    exam_type: ExamType
+    exam_date: date | None
+    result: GradeResult
+    credits: float
+
+
+class GradeCreate(BaseModel):
+    semester_id: int
+    module: str = Field(min_length=1, max_length=200)
+    module_type: ModuleType = "mandatory"
+    exam_type: ExamType = "written"
+    exam_date: date | None = None
+    result: GradeResult = "pending"
+    credits: float = Field(default=5, gt=0, le=99, multiple_of=0.5)
+
+
+class GradePatch(BaseModel):
+    module: str | None = Field(default=None, min_length=1, max_length=200)
+    module_type: ModuleType | None = None
+    exam_type: ExamType | None = None
+    exam_date: date | None = None
+    clear_exam_date: bool = False
+    result: GradeResult | None = None
+    credits: float | None = Field(default=None, gt=0, le=99, multiple_of=0.5)

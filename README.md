@@ -2,13 +2,13 @@
 
 A local, self-hosted task manager and lecture notebook with a Notion-dark look — but with **tasks**, not pages.
 
-- **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), plus lecture notes with LaTeX
+- **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), lecture notes with LaTeX, and exam grades with a German GPA
 - **Side Projects** — projects → tasks → sub-tasks
 - **Personal** — lists (e.g. *Errands*, *Home*) → tasks → sub-tasks
 - **IP2** — the IP robotics project board: *Data collection*, *Training* and *Evaluation* columns whose tasks are open, in progress or done
 - **Archive** — finished tasks leave their board 2 days after you tick them off; restore or delete them from the archive window
 - **Journal** *(experimental)* — dated entries with an optional mood, saved as you type
-- **Profile** — pixel-pet profile picture (bird, cat or horse), display name, password, appearance (system / light / dark), stats, log out, delete account
+- **Profile** — GPA and credit points, pixel-pet profile picture (bird, cat or horse), display name, password, appearance (system / light / dark), stats, log out, delete account
 
 Works on desktop, iPad and iPhone, in light or dark mode.
 
@@ -53,7 +53,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 ## Using Monotion
 
-- **Tabs**: *University*, *Side Projects*, *Personal*, *IP2* and *Journal* in the top bar. University switches between *Tasks* and *Notes* under the top bar.
+- **Tabs**: *University*, *Side Projects*, *Personal*, *IP2* and *Journal* in the top bar. University switches between *Tasks*, *Notes* and *Grades* under the top bar.
 - **Semesters**: chips under the top bar; `＋ Semester` adds one, *Rename*/*Delete* act on the selected one.
 - **Subjects / projects / lists**: cards. Click the name to rename, the colored dot to change color, 🗑 to delete.
 - **Tasks**: `New` / `＋ New task` adds a task. Click a title to edit; checkbox marks done; hover a task for its red ✕ to delete it.
@@ -73,6 +73,20 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 - **Heading color**: headings in notes are purple by default; pick another color, or none, in *Profile → Appearance → Note headings*. It applies on screen and in saved PDFs and is stored per device, like the theme.
 - **Save as PDF**: the 📄 button in a note opens the print dialog with just the rendered note on a light page (math and code stay selectable text); choose *Save as PDF* as the destination. The suggested file name is `2026-10-13 Title.pdf`. On iPhone/iPad, pinch out on the print preview and share it to *Files*.
 - **Export**: the ⤓ button in a note downloads it as `.md`. *Export* in the list downloads the notes of the selected lecture, or of the whole semester, as a zip of `.md` files laid out as `Semester/Lecture/2026-10-13 Title.md`. Each file has YAML front matter (title, date, lecture, semester), references become relative links between the files, and LaTeX stays as `$…$`. That works in Obsidian, Typora, VS Code and GitHub. Unpack several exports into the same folder and links between them keep working.
+
+### Grades
+
+*University → Grades* (next to *Tasks* and *Notes*) lists the exams of the selected semester, one row per module:
+
+- **Module** and its **type**: *Mandatory*, *Sub-elective*, *Elective* or *General*. Type a module name in *Add a module…*; the semester's subjects are suggested.
+- **Exam**: *Written exam*, *Oral exam* or *Submission*, and the **exam date** for written and oral exams (a submission has none).
+- **Credits** (ECTS, in steps of 0.5) and the **grade**: 1.0–4.0, 5.0 (failed), *Passed* / *Failed* for ungraded (pass/fail) modules, or *Not graded yet*.
+
+Everything saves as you change it (module name and credits when you leave the field or press Enter; Esc undoes). The tiles above the list show the semester's GPA, credits earned and modules passed. Grades are kept separately from the subject cards, so clearing a subject off the task board keeps its grade; deleting the semester deletes them.
+
+*Profile → Grades* shows the overall GPA with its German word (*sehr gut* up to 1.5, *gut* up to 2.5, *befriedigend* up to 3.5, *ausreichend* up to 4.0) and the credit points earned, then both split by module type and by semester.
+
+The GPA follows the German system: the average of graded, passed modules weighted by their credit points, cut (not rounded) after the first decimal as most exam regulations require, so 1.86 is a 1.8; the exact value is shown next to it. Failed attempts and ungraded modules don't count toward the GPA; passed ungraded modules still earn their credits. Enter a retake as a new row.
 
 ### IP2
 
@@ -138,7 +152,7 @@ backend/app/
   main.py          FastAPI app, creates tables on startup, serves frontend/dist
   config.py        settings from .env
   db.py            engine / session
-  models.py        User, Semester, Subject, Project (side project or personal list), Task, LectureNote, JournalEntry, IP2Task
+  models.py        User, Semester, Subject, Project (side project or personal list), Task, LectureNote, JournalEntry, IP2Task, Grade
   schemas.py       Pydantic request/response models
   auth.py          password hashing, JWT, current_user dependency
   routers/auth.py  register / login / me
@@ -146,6 +160,7 @@ backend/app/
   routers/journal.py  journal entries
   routers/notes.py    lecture notes, references, .md / zip export
   routers/ip2.py      IP2 robotics board tasks
+  routers/grades.py   exam grades per semester
 frontend/src/
   types.ts         shared TypeScript types
   api.ts           typed fetch client + token storage
@@ -158,6 +173,8 @@ frontend/src/
   Profile.tsx      profile, appearance, password, delete account
   Journal.tsx      journal list + autosaving editor
   IP2.tsx          IP2 board: data collection / training / evaluation columns
+  Grades.tsx       grades of a semester: one editable row per exam
+  gpa.ts           German GPA and credit points
   Notes.tsx        lecture notes: list, editor, reference picker (loaded on demand)
   markdown.ts      markdown + KaTeX + references → sanitised HTML
   theme.ts         light/dark/system theme with the circular reveal
@@ -201,6 +218,10 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | POST | `/auth/delete-account` | `{password}` — deletes the user and all their data |
 | GET/POST | `/journal` | list (newest first) / create `{entry_date?}` |
 | PATCH/DELETE | `/journal/{id}` | `entry_date, title, body, mood (1–5), clear_mood` / delete |
+| GET | `/grades` | every exam of the user (for the profile GPA) |
+| GET | `/semesters/{id}/grades` | the semester's exams, by exam date |
+| POST | `/grades` | `{semester_id, module, module_type?, exam_type?, exam_date?, result?, credits?}` |
+| PATCH/DELETE | `/grades/{id}` | `module, module_type, exam_type, exam_date, clear_exam_date, result, credits` / delete |
 | GET/POST | `/ip2` | IP2 tasks / create `{stage, title}`, `stage` is `data`, `training` or `evaluation` |
 | PATCH/DELETE | `/ip2/{id}` | `stage, title, status` (`open`, `progress`, `done`) / delete |
 | GET | `/notes` | `{subjects, notes}`: every lecture and note summary of the user |
