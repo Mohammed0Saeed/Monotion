@@ -167,6 +167,9 @@ button.danger:not(:disabled):active { background: var(--red); color: #fff; }
   .ref-picker li:hover { background: rgb(var(--fg) / .06); }
   .ref:hover { border-bottom-style: solid; }
   .code-copy:hover { background: rgb(var(--fg) / .08); color: var(--ink); }
+  .ip2-status:hover { filter: brightness(1.15); background-color: rgb(var(--fg) / .12); }
+  .ip2-status[data-status="progress"]:hover { background: color-mix(in srgb, var(--ac) 28%, transparent); }
+  .ip2-status[data-status="done"]:hover { background: var(--ac); }
 }
 
 /* ───────── top bar ───────── */
@@ -375,6 +378,33 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
   transition: border-color .15s, color .15s, background-color .15s;
 }
 .card.new-group { padding: 16px 18px; }
+
+/* ───────── IP2: three stage columns ───────── */
+.ip2 { max-width: 1400px; margin: 0 auto; padding: 24px 24px 0; }
+.ip2-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.ip2-head h1 { margin: 0; font-size: 24px; font-weight: 700; font-stretch: var(--wide); }
+.ip2-head p { margin: 0; }
+.ip2-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start; padding: 20px 0 24px; }
+.ip2-icon { flex: none; color: var(--ac); }
+.ip2-col h2 { cursor: default; font-size: 18px; }
+.ip2-tally { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 0 12px 8px; font-size: 11px; font-stretch: var(--narrow); color: rgb(var(--fg) / .55); }
+.ip2-tally span { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.ip2-task { padding-left: 12px; }
+.ip2-adding { padding-left: 12px; }
+.ip2-add { padding-left: 12px; }
+
+/* status pill: click cycles open → in progress → done */
+.ip2-status {
+  display: inline-flex; align-items: center; gap: 5px; flex: none;
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; font-stretch: var(--narrow); white-space: nowrap;
+  color: rgb(var(--fg) / .65); background: rgb(var(--fg) / .07);
+  transition: background-color .15s, color .15s, transform .12s;
+}
+.ip2-status:active { transform: scale(.94); }
+.ip2-status[data-status="progress"] { color: var(--ac); background: color-mix(in srgb, var(--ac) 18%, transparent); }
+.ip2-status[data-status="progress"] svg { animation: spin 3s linear infinite; }
+.ip2-status[data-status="done"] { color: #fff; background: var(--ac); }
+.ip2-tally [data-status="progress"] { color: var(--ac); }
 
 /* ───────── profile ───────── */
 .profile {
@@ -687,6 +717,7 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
 @keyframes flash        { 30% { filter: brightness(1.8); } }
 @keyframes grow         { from { transform: scaleX(0); } }
 @keyframes spark-in     { from { opacity: 0; transform: rotate(-140deg) scale(.2); } }
+@keyframes spin         { to { transform: rotate(360deg); } }
 @keyframes shake        { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @keyframes theme-reveal {
   from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0)); }
@@ -714,6 +745,7 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
   .chip { padding: 7px 12px; }
   .ref-picker li { padding: 10px 8px; }
   .code-copy { padding: 6px 10px; }
+  .ip2-status { padding: 7px 11px; }
   /* 16px stops iOS Safari from zooming in when an input is focused */
   input, textarea, .inline-input, .inline-input.seg-input, .field input, .text-input, .date-input { font-size: 16px; }
   .inline-input.group-edit { font-size: 19px; }
@@ -732,6 +764,8 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
   .card header .dot { margin-top: 6px; }
   .subbar { padding: 18px 18px 0; }
   .journal { grid-template-columns: 260px minmax(0, 1fr); }
+  .ip2 { padding: 18px 18px 0; }
+  .ip2-board { gap: 14px; padding-top: 16px; }
   .editor { padding: 24px 28px 64px; }
 }
 
@@ -790,6 +824,8 @@ html:has(dialog.archive[open]) { overflow: hidden; } /* the page behind stays pu
   .lecture-select { max-width: 150px; }
   .mode-label { display: none; }
   .ref-picker { width: min(300px, 100%); }
+  .ip2 { padding: 14px 12px 0; }
+  .ip2-board { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 14px; }
 
   /* the archive takes the whole screen */
   .archive {

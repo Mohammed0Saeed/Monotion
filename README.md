@@ -5,6 +5,7 @@ A local, self-hosted task manager and lecture notebook with a Notion-dark look �
 - **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), plus lecture notes with LaTeX
 - **Side Projects** — projects → tasks → sub-tasks
 - **Personal** — lists (e.g. *Errands*, *Home*) → tasks → sub-tasks
+- **IP2** — the IP robotics project board: *Data collection*, *Training* and *Evaluation* columns whose tasks are open, in progress or done
 - **Archive** — finished tasks leave their board 2 days after you tick them off; restore or delete them from the archive window
 - **Journal** *(experimental)* — dated entries with an optional mood, saved as you type
 - **Profile** — display name, password, appearance (system / light / dark), stats, log out, delete account
@@ -52,7 +53,7 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 ## Using Monotion
 
-- **Tabs**: *University*, *Side Projects*, *Personal* and *Journal* in the top bar. University switches between *Tasks* and *Notes* under the top bar.
+- **Tabs**: *University*, *Side Projects*, *Personal*, *IP2* and *Journal* in the top bar. University switches between *Tasks* and *Notes* under the top bar.
 - **Semesters**: chips under the top bar; `＋ Semester` adds one, *Rename*/*Delete* act on the selected one.
 - **Subjects / projects / lists**: cards. Click the name to rename, the colored dot to change color, 🗑 to delete.
 - **Tasks**: `New` / `＋ New task` adds a task. Click a title to edit; checkbox marks done; hover a task for its red ✕ to delete it.
@@ -72,6 +73,10 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 - **Heading color**: headings in notes are purple by default; pick another color, or none, in *Profile → Appearance → Note headings*. It applies on screen and in saved PDFs and is stored per device, like the theme.
 - **Save as PDF**: the 📄 button in a note opens the print dialog with just the rendered note on a light page (math and code stay selectable text); choose *Save as PDF* as the destination. The suggested file name is `2026-10-13 Title.pdf`. On iPhone/iPad, pinch out on the print preview and share it to *Files*.
 - **Export**: the ⤓ button in a note downloads it as `.md`. *Export* in the list downloads the notes of the selected lecture, or of the whole semester, as a zip of `.md` files laid out as `Semester/Lecture/2026-10-13 Title.md`. Each file has YAML front matter (title, date, lecture, semester), references become relative links between the files, and LaTeX stays as `$…$`. That works in Obsidian, Typora, VS Code and GitHub. Unpack several exports into the same folder and links between them keep working.
+
+### IP2
+
+*IP2* (robot icon) tracks the IP robotics project in three columns: **Data collection**, **Training** and **Evaluation**. `＋ New` in a column adds tasks to it (Enter keeps the input open for the next one). Each task has a status, shown as a pill: click it to move it along *Open → In progress → Done* (and back to *Open*). A column lists running work first, then open, then done; its header counts each status and its bottom edge fills as tasks get done. Click a title to rename it, ✕ deletes it. IP2 tasks don't go to the archive.
 
 ### Journal (experimental)
 
@@ -129,13 +134,14 @@ backend/app/
   main.py          FastAPI app, creates tables on startup, serves frontend/dist
   config.py        settings from .env
   db.py            engine / session
-  models.py        User, Semester, Subject, Project (side project or personal list), Task, LectureNote, JournalEntry
+  models.py        User, Semester, Subject, Project (side project or personal list), Task, LectureNote, JournalEntry, IP2Task
   schemas.py       Pydantic request/response models
   auth.py          password hashing, JWT, current_user dependency
   routers/auth.py  register / login / me
   routers/planner.py  semesters, subjects, projects / personal lists, tasks
   routers/journal.py  journal entries
   routers/notes.py    lecture notes, references, .md / zip export
+  routers/ip2.py      IP2 robotics board tasks
 frontend/src/
   types.ts         shared TypeScript types
   api.ts           typed fetch client + token storage
@@ -147,6 +153,7 @@ frontend/src/
   Login.tsx        sign in / sign up
   Profile.tsx      profile, appearance, password, delete account
   Journal.tsx      journal list + autosaving editor
+  IP2.tsx          IP2 board: data collection / training / evaluation columns
   Notes.tsx        lecture notes: list, editor, reference picker (loaded on demand)
   markdown.ts      markdown + KaTeX + references → sanitised HTML
   theme.ts         light/dark/system theme with the circular reveal
@@ -189,6 +196,8 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | POST | `/auth/delete-account` | `{password}` — deletes the user and all their data |
 | GET/POST | `/journal` | list (newest first) / create `{entry_date?}` |
 | PATCH/DELETE | `/journal/{id}` | `entry_date, title, body, mood (1–5), clear_mood` / delete |
+| GET/POST | `/ip2` | IP2 tasks / create `{stage, title}`, `stage` is `data`, `training` or `evaluation` |
+| PATCH/DELETE | `/ip2/{id}` | `stage, title, status` (`open`, `progress`, `done`) / delete |
 | GET | `/notes` | `{subjects, notes}`: every lecture and note summary of the user |
 | POST | `/notes` | `{subject_id, note_date?, title?}` |
 | GET/PATCH/DELETE | `/notes/{id}` | note with `body` and `backlinks` / `subject_id, note_date, title, body` / delete |

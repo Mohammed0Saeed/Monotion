@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from .config import ROOT
 from .db import Base, engine
-from .routers import auth, journal, notes, planner
+from .routers import auth, ip2, journal, notes, planner
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ api.include_router(auth.router)
 api.include_router(planner.router)
 api.include_router(journal.router)
 api.include_router(notes.router)
+api.include_router(ip2.router)
 app.include_router(api)
 
 # Serve the built React app (frontend/dist) from the same port.

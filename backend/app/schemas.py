@@ -180,3 +180,27 @@ class NotePatch(BaseModel):
     note_date: date | None = None
     title: str | None = Field(default=None, max_length=300)
     body: str | None = None
+
+
+IP2Stage = Literal["data", "training", "evaluation"]
+IP2Status = Literal["open", "progress", "done"]
+
+
+class IP2TaskOut(ORM):
+    id: int
+    stage: IP2Stage
+    title: str
+    status: IP2Status
+    position: int
+    updated_at: datetime
+
+
+class IP2TaskCreate(BaseModel):
+    stage: IP2Stage
+    title: str = Field(min_length=1, max_length=500)
+
+
+class IP2TaskPatch(BaseModel):
+    stage: IP2Stage | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    status: IP2Status | None = None

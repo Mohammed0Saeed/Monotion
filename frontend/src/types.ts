@@ -104,3 +104,17 @@ export interface NotesIndex {
 }
 
 export type NotePatch = Partial<Pick<Note, 'subject_id' | 'note_date' | 'title' | 'body'>>
+
+export type IP2Stage = 'data' | 'training' | 'evaluation'
+export type IP2Status = 'open' | 'progress' | 'done'
+
+export interface IP2Task {
+  id: number
+  stage: IP2Stage
+  title: string
+  status: IP2Status
+  position: number
+  updated_at: string
+}
+
+export type IP2Patch = Partial<Pick<IP2Task, 'stage' | 'title' | 'status'>>

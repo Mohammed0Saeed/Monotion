@@ -89,3 +89,16 @@ class LectureNote(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
+
+
+class IP2Task(Base):
+    """A task of the IP robotics project, in one stage column (data, training, evaluation)."""
+    __tablename__ = "ip2_tasks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    stage: Mapped[str] = mapped_column(String(16))                # data | training | evaluation
+    title: Mapped[str] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(16), default="open")  # open | progress | done
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

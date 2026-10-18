@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type CSSProperties } from 'react'
 import {
-  Archive as ArchiveIcon, FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
+  Archive as ArchiveIcon, Bot, FlaskConical, GraduationCap, ListChecks, LogOut, Moon, NotebookPen, NotebookText, Pencil, Plus, Rocket, Sun, Trash2,
   UserRound,
 } from 'lucide-react'
 import { api, auth } from './api'
@@ -11,12 +11,13 @@ import Group, { COLORS, NOUN, subtree, type GroupActions } from './Group'
 import { useSlidingPill } from './Segmented'
 import Avatar from './Avatar'
 import Journal from './Journal'
+import IP2 from './IP2'
 import Profile from './Profile'
 import Archive from './Archive'
 import { resolveTheme, useTheme } from './theme'
 import type { ArchiveSection, GroupData, Kind, Profile as ProfileData, Semester, Task } from './types'
 
-type View = 'university' | 'projects' | 'personal' | 'journal' | 'profile'
+type View = 'university' | 'projects' | 'personal' | 'ip2' | 'journal' | 'profile'
 
 /** which part of the archive opens from each tab */
 const ARCHIVE_OF: Partial<Record<View, ArchiveSection>> = { university: 'university', projects: 'project', personal: 'personal' }
@@ -28,6 +29,7 @@ const TABS = [
   { id: 'university', label: 'University', short: 'University', Icon: GraduationCap },
   { id: 'projects', label: 'Side Projects', short: 'Projects', Icon: Rocket },
   { id: 'personal', label: 'Personal', short: 'Personal', Icon: UserRound },
+  { id: 'ip2', label: 'IP2', short: 'IP2', Icon: Bot },
   { id: 'journal', label: 'Journal', short: 'Journal', Icon: NotebookPen, experimental: true },
 ] as const
 
@@ -258,6 +260,7 @@ export default function App() {
         {view === 'university' && <University />}
         {view === 'projects' && <Board kind="project" />}
         {view === 'personal' && <Board kind="personal" />}
+        {view === 'ip2' && <IP2 />}
         {view === 'journal' && <Journal />}
         {view === 'profile' && (me
           ? <Profile me={me} onChange={setMe} theme={theme} onTheme={setTheme} onLogout={logout} />
