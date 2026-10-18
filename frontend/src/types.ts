@@ -121,7 +121,7 @@ export interface IP2Task {
 export type IP2Patch = Partial<Pick<IP2Task, 'stage' | 'title' | 'status'>>
 
 export type ModuleType = 'mandatory' | 'subelective' | 'elective' | 'general'
-export type ExamType = 'written' | 'oral' | 'submission'
+export type ExamType = 'written' | 'oral' | 'submission' | 'lab'
 /** 'pending', a German grade '1.0'..'5.0', or 'passed' / 'failed' for ungraded modules */
 export type GradeResult = 'pending' | '1.0' | '1.3' | '1.7' | '2.0' | '2.3' | '2.7' | '3.0' | '3.3' | '3.7' | '4.0' | '5.0'
   | 'passed' | 'failed'
@@ -129,7 +129,7 @@ export type GradeResult = 'pending' | '1.0' | '1.3' | '1.7' | '2.0' | '2.3' | '2
 export interface Grade {
   id: number
   semester_id: number
-  module: string
+  subject_id: number      // the module: a subject of the semester, as in tasks and notes
   module_type: ModuleType
   exam_type: ExamType
   exam_date: string | null

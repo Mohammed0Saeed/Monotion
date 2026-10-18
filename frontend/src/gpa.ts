@@ -11,7 +11,11 @@ export const EXAM_TYPES: { id: ExamType; label: string }[] = [
   { id: 'written', label: 'Written exam' },
   { id: 'oral', label: 'Oral exam' },
   { id: 'submission', label: 'Submission' },
+  { id: 'lab', label: 'Lab' },
 ]
+
+/** only formal exams have an exam date; submissions and labs don't */
+export const hasExamDate = (t: ExamType) => t === 'written' || t === 'oral'
 
 export const RESULTS: { id: GradeResult; label: string }[] = [
   { id: 'pending', label: 'Not graded yet' },

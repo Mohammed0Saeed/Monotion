@@ -207,7 +207,7 @@ function University() {
           <Notes semester={semester!} onSemester={setCurrent} onTasks={() => setMode('tasks')} />
         </Suspense>
       )}
-      {mode === 'grades' && <Grades semester={semester!} />}
+      {mode === 'grades' && <Grades key={semester!.id} semester={semester!} onTasks={() => setMode('tasks')} />}
     </div>
   )
 }

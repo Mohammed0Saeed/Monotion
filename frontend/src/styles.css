@@ -421,7 +421,9 @@ main { padding-bottom: calc(var(--bar-h) + var(--safe-bottom)); }
 }
 select.gfield { cursor: pointer; }
 .gfield:focus { border-color: var(--blue); background: var(--field); box-shadow: 0 0 0 3px rgb(35 131 226 / .2); }
-.g-module .gfield { font-weight: 600; }
+.g-module { position: relative; }
+.g-module .chip-dot { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.g-module .gfield { padding-left: 24px; font-weight: 600; }
 .g-nodate { display: block; color: var(--muted); font-size: 12px; }
 .g-credits-box { position: relative; display: block; }
 .g-credits-box .gfield { padding-right: 30px; font-variant-numeric: tabular-nums; }
@@ -441,7 +443,7 @@ select.gfield { cursor: pointer; }
 .grade-row[data-status="failed"]::before { background: var(--red); }
 
 .grade-add { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 4px 10px; color: rgb(var(--fg) / .5); }
-.grade-add .gfield { flex: 1; }
+.grade-add .gfield { flex: 0 1 360px; }
 .grade-add .gfield::placeholder { color: rgb(var(--fg) / .45); }
 .grade-hint { max-width: 80ch; margin: 18px 10px 0; }
 .grades > .note { margin-left: 10px; }

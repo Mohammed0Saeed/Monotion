@@ -82,7 +82,7 @@ export const api = {
 
   grades: (sid: number) => request<Grade[]>('GET', `/semesters/${sid}/grades`),
   allGrades: () => request<Grade[]>('GET', '/grades'),
-  addGrade: (semester_id: number, module: string) => request<Grade>('POST', '/grades', { semester_id, module }),
+  addGrade: (subject_id: number) => request<Grade>('POST', '/grades', { subject_id }),
   updateGrade: (id: number, patch: GradePatch) => request<Grade>('PATCH', `/grades/${id}`, patch),
   deleteGrade: (id: number) => request('DELETE', `/grades/${id}`),
 

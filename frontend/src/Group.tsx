@@ -148,7 +148,7 @@ export default function Group({ group, actions, kind, index }: {
         {total > 0 && <span className="count" title={`${done} of ${total} done`}>{done}/{total}</span>}
         <button className="new-btn" onClick={() => setAdding(true)}><Plus size={14} /> New</button>
         <button className="icon-btn danger" title={`Delete ${NOUN[kind]}`} aria-label={`Delete ${group.name}`}
-                onClick={() => confirm(`Delete "${group.name}" and all its tasks${kind === 'subject' ? ' and notes' : ''}?`) && void actions.removeGroup(group.id)}>
+                onClick={() => confirm(`Delete "${group.name}" and all its tasks${kind === 'subject' ? ', notes and grades' : ''}?`) && void actions.removeGroup(group.id)}>
           <Trash2 size={15} />
         </button>
       </header>

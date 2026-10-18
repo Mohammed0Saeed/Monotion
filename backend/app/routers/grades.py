@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from ..auth import current_user
 from ..db import get_db
-from ..models import Grade, Semester, User
-from ..schemas import GradeCreate, GradeOut, GradePatch
+from ..models import Grade, Semester, Subject, User
+from ..schemas import NO_EXAM_DATE, GradeCreate, GradeOut, GradePatch
 
 router = APIRouter(tags=["grades"])
 
@@ -26,6 +26,14 @@ def owned_semester(db: Session, sid: int, user: User) -> Semester:
     return s
 
 
+def owned_subject(db: Session, sid: int, user: User) -> Subject:
+    s = db.get(Subject, sid)
+    if s is None:
+        raise HTTPException(404, "Subject not found")
+    owned_semester(db, s.semester_id, user)
+    return s
+
+
 @router.get("/grades", response_model=list[GradeOut])
 def all_grades(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """every exam of the user, for the GPA in the profile"""
@@ -40,12 +48,11 @@ def semester_grades(sid: int, db: Session = Depends(get_db), user: User = Depend
 
 @router.post("/grades", response_model=GradeOut)
 def create_grade(body: GradeCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
-    owned_semester(db, body.semester_id, user)
+    subject = owned_subject(db, body.subject_id, user)
     data = body.model_dump()
-    data["module"] = data["module"].strip()
-    if data["exam_type"] == "submission":
+    if data["exam_type"] in NO_EXAM_DATE:
         data["exam_date"] = None
-    g = Grade(user_id=user.id, **data)
+    g = Grade(user_id=user.id, semester_id=subject.semester_id, **data)
     db.add(g)
     db.commit()
     db.refresh(g)
@@ -58,10 +65,12 @@ def update_grade(gid: int, body: GradePatch, db: Session = Depends(get_db), user
     data = body.model_dump(exclude_unset=True)
     if data.pop("clear_exam_date", False):
         g.exam_date = None
+    if data.get("subject_id") is not None and owned_subject(db, data["subject_id"], user).semester_id != g.semester_id:
+        raise HTTPException(400, "Pick a subject of the same semester")
     for k, v in data.items():
         if v is not None:
-            setattr(g, k, v.strip() if k == "module" else v)
-    if g.exam_type == "submission":  # a submission has a deadline, not an exam date
+            setattr(g, k, v)
+    if g.exam_type in NO_EXAM_DATE:  # submissions and labs aren't formal exams
         g.exam_date = None
     db.commit()
     db.refresh(g)

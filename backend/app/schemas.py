@@ -209,7 +209,8 @@ class IP2TaskPatch(BaseModel):
 
 
 ModuleType = Literal["mandatory", "subelective", "elective", "general"]
-ExamType = Literal["written", "oral", "submission"]
+ExamType = Literal["written", "oral", "submission", "lab"]
+NO_EXAM_DATE = {"submission", "lab"}  # not formal exams, so no exam date
 GradeResult = Literal["pending", "1.0", "1.3", "1.7", "2.0", "2.3", "2.7", "3.0", "3.3", "3.7", "4.0", "5.0",
                       "passed", "failed"]
 
@@ -217,7 +218,7 @@ GradeResult = Literal["pending", "1.0", "1.3", "1.7", "2.0", "2.3", "2.7", "3.0"
 class GradeOut(ORM):
     id: int
     semester_id: int
-    module: str
+    subject_id: int
     module_type: ModuleType
     exam_type: ExamType
     exam_date: date | None
@@ -226,8 +227,7 @@ class GradeOut(ORM):
 
 
 class GradeCreate(BaseModel):
-    semester_id: int
-    module: str = Field(min_length=1, max_length=200)
+    subject_id: int
     module_type: ModuleType = "mandatory"
     exam_type: ExamType = "written"
     exam_date: date | None = None
@@ -236,7 +236,7 @@ class GradeCreate(BaseModel):
 
 
 class GradePatch(BaseModel):
-    module: str | None = Field(default=None, min_length=1, max_length=200)
+    subject_id: int | None = None
     module_type: ModuleType | None = None
     exam_type: ExamType | None = None
     exam_date: date | None = None

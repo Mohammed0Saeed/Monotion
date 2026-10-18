@@ -23,6 +23,23 @@ async def lifespan(app: FastAPI):
         conn.execute(text("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP"))
         # tasks ticked before completed_at existed count as done from now, so they archive 2 days later
         conn.execute(text("UPDATE tasks SET completed_at = now() WHERE done AND completed_at IS NULL"))
+        # grades first named their module as text; now they belong to a subject, like notes. Link each to the
+        # semester's subject of that name, making the subject if there is none, so no grade is lost.
+        if conn.scalar(text("SELECT 1 FROM information_schema.columns WHERE table_name = 'grades' AND column_name = 'module'")):
+            conn.execute(text("ALTER TABLE grades ADD COLUMN IF NOT EXISTS subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE"))
+            conn.execute(text("""
+                INSERT INTO subjects (semester_id, name, color, position)
+                SELECT DISTINCT g.semester_id, g.module, 'gray', 1000 FROM grades g
+                WHERE g.subject_id IS NULL AND NOT EXISTS (
+                    SELECT 1 FROM subjects s WHERE s.semester_id = g.semester_id AND lower(s.name) = lower(g.module))"""))
+            conn.execute(text("""
+                UPDATE grades g SET subject_id = (
+                    SELECT s.id FROM subjects s WHERE s.semester_id = g.semester_id AND lower(s.name) = lower(g.module)
+                    ORDER BY s.id LIMIT 1)
+                WHERE g.subject_id IS NULL"""))
+            conn.execute(text("ALTER TABLE grades ALTER COLUMN subject_id SET NOT NULL"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_grades_subject_id ON grades (subject_id)"))
+            conn.execute(text("ALTER TABLE grades DROP COLUMN module"))
     yield
 
 

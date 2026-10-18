@@ -1,8 +1,8 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
-import { Plus, X } from 'lucide-react'
+import { useEffect, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { ListChecks, Plus, X } from 'lucide-react'
 import { api } from './api'
-import { EXAM_TYPES, fmtCredits, fmtGrade, gradeWord, isFailed, isPassed, MODULE_TYPES, RESULTS, summarize } from './gpa'
-import type { Grade, GradePatch, Semester } from './types'
+import { EXAM_TYPES, fmtCredits, fmtGrade, gradeWord, hasExamDate, isFailed, isPassed, MODULE_TYPES, RESULTS, summarize } from './gpa'
+import type { Grade, GradePatch, GroupData, Semester } from './types'
 
 /** on phones each field shows its own label; from tablet up the header row names the columns */
 function Cell({ label, className = '', children }: { label: string; className?: string; children: ReactNode }) {
@@ -14,19 +14,12 @@ const blurOnEnter = (revert: () => void) => (e: KeyboardEvent<HTMLInputElement>)
   if (e.key === 'Escape') { revert(); requestAnimationFrame(() => (e.target as HTMLInputElement).blur()) }
 }
 
-function Row({ grade, index, onUpdate, onRemove }: {
-  grade: Grade; index: number; onUpdate: (patch: GradePatch) => void; onRemove: () => void
+function Row({ grade, subjects, index, onUpdate, onRemove }: {
+  grade: Grade; subjects: GroupData[]; index: number; onUpdate: (patch: GradePatch) => void; onRemove: () => void
 }) {
-  const [module, setModule] = useState(grade.module)
   const [credits, setCredits] = useState(fmtCredits(grade.credits))
-  useEffect(() => setModule(grade.module), [grade.module])
   useEffect(() => setCredits(fmtCredits(grade.credits)), [grade.credits])
-
-  function commitModule() {
-    const v = module.trim()
-    if (!v) return setModule(grade.module)
-    if (v !== grade.module) onUpdate({ module: v })
-  }
+  const subject = subjects.find(s => s.id === grade.subject_id)
   function commitCredits() {
     const n = Math.round(Number(credits.replace(',', '.')) * 2) / 2 // credit points come in halves
     if (!(n > 0 && n <= 99)) return setCredits(fmtCredits(grade.credits))
@@ -37,9 +30,11 @@ function Row({ grade, index, onUpdate, onRemove }: {
   const status = isPassed(grade) ? 'passed' : isFailed(grade) ? 'failed' : 'pending'
   return (
     <div className="grade-row" data-status={status} role="row" style={{ '--i': index } as CSSProperties}>
-      <Cell label="Module" className="g-module">
-        <input className="gfield" value={module} maxLength={200} onChange={e => setModule(e.target.value)}
-               onBlur={commitModule} onKeyDown={blurOnEnter(() => setModule(grade.module))} />
+      <Cell label="Module" className={`g-module c-${subject?.color ?? 'gray'}`}>
+        <span className="chip-dot" />
+        <select className="gfield" value={grade.subject_id} onChange={e => onUpdate({ subject_id: Number(e.target.value) })}>
+          {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
       </Cell>
       <Cell label="Module type" className="g-type">
         <select className="gfield" value={grade.module_type}
@@ -54,7 +49,7 @@ function Row({ grade, index, onUpdate, onRemove }: {
         </select>
       </Cell>
       <Cell label="Exam date" className="g-date">
-        {grade.exam_type === 'submission'
+        {!hasExamDate(grade.exam_type)
           ? <span className="gfield g-nodate">No exam date</span>
           : <input type="date" className="gfield" value={grade.exam_date ?? ''}
                    onChange={e => onUpdate(e.target.value ? { exam_date: e.target.value } : { clear_exam_date: true })} />}
@@ -72,8 +67,8 @@ function Row({ grade, index, onUpdate, onRemove }: {
           {RESULTS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
         </select>
       </Cell>
-      <button className="g-delete danger" aria-label={`Delete ${grade.module}`} title="Delete"
-              onClick={() => confirm(`Delete the exam of "${grade.module}"?`) && onRemove()}>
+      <button className="g-delete danger" aria-label={`Delete ${subject?.name ?? 'exam'}`} title="Delete"
+              onClick={() => confirm(`Delete the exam of "${subject?.name ?? 'this module'}"?`) && onRemove()}>
         <X size={15} />
       </button>
     </div>
@@ -81,27 +76,31 @@ function Row({ grade, index, onUpdate, onRemove }: {
 }
 
 /** exams of the selected semester: module, type, exam, date, credit points and grade, with the semester's GPA on top */
-export default function Grades({ semester }: { semester: Semester }) {
+export default function Grades({ semester, onTasks }: { semester: Semester; onTasks: () => void }) {
   const [grades, setGrades] = useState<Grade[] | null>(null)
-  const [subjects, setSubjects] = useState<string[]>([])
-  const [name, setName] = useState('')
+  const [subjects, setSubjects] = useState<GroupData[] | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setGrades(null)
+    setGrades(null); setSubjects(null)
     api.grades(semester.id).then(setGrades)
-    api.subjects(semester.id).then(gs => setSubjects(gs.map(g => g.name))).catch(() => {})
+    api.subjects(semester.id).then(setSubjects)
   }, [semester.id])
 
-  if (!grades) return <div className="loading">Loading…</div>
+  if (!grades || !subjects) return <div className="loading">Loading…</div>
 
-  async function add(e: FormEvent) {
-    e.preventDefault()
-    const module = name.trim()
-    if (!module) return
-    setName('')
+  if (!subjects.length) {
+    return (
+      <div className="empty">
+        <p>Modules are the subjects of this semester. Add them under Tasks, then give each one its exam here.</p>
+        <button className="btn-primary" onClick={onTasks}><ListChecks size={15} /> Go to Tasks</button>
+      </div>
+    )
+  }
+
+  async function add(subjectId: number) {
     try {
-      const g = await api.addGrade(semester.id, module)
+      const g = await api.addGrade(subjectId)
       setGrades(gs => gs && [...gs, g])
     } catch (err) { setError(err instanceof Error ? err.message : String(err)) }
   }
@@ -110,7 +109,7 @@ export default function Grades({ semester }: { semester: Semester }) {
     setGrades(gs => gs && gs.map(g => {
       if (g.id !== id) return g
       const next = { ...g, ...patch }
-      if (patch.clear_exam_date || next.exam_type === 'submission') next.exam_date = null
+      if (patch.clear_exam_date || !hasExamDate(next.exam_type)) next.exam_date = null
       delete (next as GradePatch).clear_exam_date
       return next
     }))
@@ -128,7 +127,8 @@ export default function Grades({ semester }: { semester: Semester }) {
   }
 
   const sum = summarize(grades)
-  const suggestions = subjects.filter(s => !grades.some(g => g.module === s))
+  const open = subjects.filter(s => !grades.some(g => g.subject_id === s.id))
+  const listed = subjects.filter(s => grades.some(g => g.subject_id === s.id))
 
   return (
     <div className="grades">
@@ -155,15 +155,22 @@ export default function Grades({ semester }: { semester: Semester }) {
           <span>Module</span><span>Type</span><span>Exam</span><span>Date</span><span>Credits</span><span>Grade</span><span />
         </div>
         {grades.map((g, i) => (
-          <Row key={g.id} grade={g} index={i} onUpdate={p => void update(g.id, p)} onRemove={() => void remove(g.id)} />
+          <Row key={g.id} grade={g} subjects={subjects} index={i} onUpdate={p => void update(g.id, p)} onRemove={() => void remove(g.id)} />
         ))}
-        <form className="grade-add" onSubmit={add}>
+        <label className="grade-add">
           <Plus size={15} />
-          <input className="gfield" value={name} list="grade-modules" maxLength={200} onChange={e => setName(e.target.value)}
-                 placeholder={grades.length ? 'Add a module…' : 'Add your first module, e.g. Linear Algebra'} aria-label="New module" />
-          <datalist id="grade-modules">{suggestions.map(s => <option key={s} value={s} />)}</datalist>
-          {name.trim() && <button className="new-btn">Add</button>}
-        </form>
+          {/* picking a subject adds its exam; the select snaps back so the next one can be picked */}
+          <select className="gfield" value="" aria-label="Add the exam of a module"
+                  onChange={e => e.target.value && void add(Number(e.target.value))}>
+            <option value="" disabled>{grades.length ? 'Add a module…' : 'Add the exam of a module…'}</option>
+            {open.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {listed.length > 0 && (
+              <optgroup label="Already listed: add a retake">
+                {listed.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </optgroup>
+            )}
+          </select>
+        </label>
       </div>
       {error && <p className="note error" role="status">{error}</p>}
       <p className="muted small grade-hint">

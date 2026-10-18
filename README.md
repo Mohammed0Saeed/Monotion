@@ -78,11 +78,12 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 *University → Grades* (next to *Tasks* and *Notes*) lists the exams of the selected semester, one row per module:
 
-- **Module** and its **type**: *Mandatory*, *Sub-elective*, *Elective* or *General*. Type a module name in *Add a module…*; the semester's subjects are suggested.
-- **Exam**: *Written exam*, *Oral exam* or *Submission*, and the **exam date** for written and oral exams (a submission has none).
+- **Module**: one of the semester's subjects, the same ones as in *Tasks* and *Notes* (with their color). Pick it in *Add a module…*; subjects that already have a row are listed under *Already listed: add a retake*. Add subjects under *Tasks* first.
+- **Module type**: *Mandatory*, *Sub-elective*, *Elective* or *General*.
+- **Exam**: *Written exam*, *Oral exam*, *Submission* or *Lab*, and the **exam date** for written and oral exams (submissions and labs aren't formal exams, so they have none).
 - **Credits** (ECTS, in steps of 0.5) and the **grade**: 1.0–4.0, 5.0 (failed), *Passed* / *Failed* for ungraded (pass/fail) modules, or *Not graded yet*.
 
-Everything saves as you change it (module name and credits when you leave the field or press Enter; Esc undoes). The tiles above the list show the semester's GPA, credits earned and modules passed. Grades are kept separately from the subject cards, so clearing a subject off the task board keeps its grade; deleting the semester deletes them.
+Everything saves as you change it (credits when you leave the field or press Enter; Esc undoes). The tiles above the list show the semester's GPA, credits earned and modules passed. A grade belongs to its subject like a note does: deleting the subject (or its semester) deletes its grades too.
 
 *Profile → Grades* shows the overall GPA with its German word (*sehr gut* up to 1.5, *gut* up to 2.5, *befriedigend* up to 3.5, *ausreichend* up to 4.0) and the credit points earned, then both split by module type and by semester.
 
@@ -189,7 +190,7 @@ A `Task` belongs to exactly one `Subject` **or** one `Project` (enforced by a DB
 
 Ticking a task sets `completed_at` (un-ticking clears it). A top-level task whose `completed_at` is more than 2 days old counts as archived: the boards leave it and its sub-tasks out and `/archive` returns them. Nothing is moved or flagged, so un-ticking a task is all it takes to restore it.
 
-A `LectureNote` belongs to one `Subject` and is deleted with it (and with its semester). References live in the note's markdown as `[[note:<id>|<title>]]` and `[[lecture:<id>|<name>]]`; the id is what links, the text after `|` is only shown if the target has been deleted. Backlinks are found by searching other notes for the reference, so nothing extra is stored.
+A `LectureNote` belongs to one `Subject` and is deleted with it (and with its semester). So does a `Grade` (one exam of that module). References live in the note's markdown as `[[note:<id>|<title>]]` and `[[lecture:<id>|<name>]]`; the id is what links, the text after `|` is only shown if the target has been deleted. Backlinks are found by searching other notes for the reference, so nothing extra is stored.
 
 Every row is scoped to its owner, so users never see each other's data.
 
@@ -220,8 +221,8 @@ All routes are under `/api`; everything except `/auth/*` needs `Authorization: B
 | PATCH/DELETE | `/journal/{id}` | `entry_date, title, body, mood (1–5), clear_mood` / delete |
 | GET | `/grades` | every exam of the user (for the profile GPA) |
 | GET | `/semesters/{id}/grades` | the semester's exams, by exam date |
-| POST | `/grades` | `{semester_id, module, module_type?, exam_type?, exam_date?, result?, credits?}` |
-| PATCH/DELETE | `/grades/{id}` | `module, module_type, exam_type, exam_date, clear_exam_date, result, credits` / delete |
+| POST | `/grades` | `{subject_id, module_type?, exam_type?, exam_date?, result?, credits?}`, `exam_type` is `written`, `oral`, `submission` or `lab` |
+| PATCH/DELETE | `/grades/{id}` | `subject_id` (same semester), `module_type, exam_type, exam_date, clear_exam_date, result, credits` / delete |
 | GET/POST | `/ip2` | IP2 tasks / create `{stage, title}`, `stage` is `data`, `training` or `evaluation` |
 | PATCH/DELETE | `/ip2/{id}` | `stage, title, status` (`open`, `progress`, `done`) / delete |
 | GET | `/notes` | `{subjects, notes}`: every lecture and note summary of the user |
