@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, func, select
@@ -14,8 +14,16 @@ router = APIRouter(tags=["planner"], dependencies=[Depends(current_user)])
 
 # a top-level task done for longer than this leaves its board for the archive, sub-tasks and all
 ARCHIVE_AFTER = timedelta(days=2)
-ARCHIVED = and_(Task.parent_id.is_(None), Task.done.is_(True),
-                Task.completed_at < func.now() - ARCHIVE_AFTER)
+
+
+def utcnow() -> datetime:
+    """Naive UTC, what the DB's now() gives; computed here so SQLite and Postgres agree."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def archived():
+    return and_(Task.parent_id.is_(None), Task.done.is_(True),
+                Task.completed_at < utcnow() - ARCHIVE_AFTER)
 
 
 # ---------- helpers ----------
@@ -62,7 +70,7 @@ def archived_ids(rows) -> set[int]:
 def groups_out(db: Session, groups: list, key: str, user: User) -> list[GroupOut]:
     ids = [g.id for g in groups]
     rows = db.execute(
-        select(Task, ARCHIVED).where(getattr(Task, key).in_(ids)).order_by(Task.position, Task.id)
+        select(Task, archived()).where(getattr(Task, key).in_(ids)).order_by(Task.position, Task.id)
     ).all() if ids else []
     hidden = archived_ids(rows)
     by_group: dict[int, list] = {}
@@ -173,7 +181,7 @@ def delete_project(id_: int, db: Session = Depends(get_db), user: User = Depends
 @router.get("/archive", response_model=list[ArchiveGroup])
 def archive(db: Session = Depends(get_db), user: User = Depends(current_user)):
     """Archived tasks of every board, grouped by their subject, project or list."""
-    rows = db.execute(select(Task, ARCHIVED).where(Task.user_id == user.id)
+    rows = db.execute(select(Task, archived()).where(Task.user_id == user.id)
                       .order_by(Task.position, Task.id)).all()
     keep = archived_ids(rows)
     by_subject: dict[int, list] = {}
@@ -224,7 +232,7 @@ def update_task(tid: int, body: TaskPatch, db: Session = Depends(get_db), user: 
     if data.pop("clear_due_date", False):
         t.due_date = None
     if data.get("done") is not None and data["done"] != t.done:
-        t.completed_at = func.now() if data["done"] else None
+        t.completed_at = utcnow() if data["done"] else None
     for k, v in data.items():
         if v is not None:
             setattr(t, k, v)

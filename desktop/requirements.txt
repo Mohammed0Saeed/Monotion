@@ -1,0 +1,10 @@
+# Desktop build: SQLite instead of Postgres, so no psycopg
+fastapi
+uvicorn
+sqlalchemy>=2
+pyjwt
+bcrypt
+pydantic-settings
+email-validator
+pywebview
+pyinstaller

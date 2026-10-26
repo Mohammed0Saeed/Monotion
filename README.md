@@ -51,6 +51,47 @@ echo "127.0.0.1  notion.maki.local" | sudo tee -a /etc/hosts
 
 For other devices on your network, use this machine's LAN IP instead of `127.0.0.1` on each device, and start with `HOST=0.0.0.0 ./run.sh`. A hosts file can't hold a port, so the `:8000` stays in the URL.
 
+## Windows app
+
+Monotion also ships as a standalone Windows 10/11 app: the same web UI in its own window, with the server built in. There is no Docker, Postgres, Python or Node to install, and the data is a SQLite file in `%APPDATA%\Monotion\monotion.db`. It uses the WebView2 runtime that comes with Windows 11.
+
+### Install and run
+
+1. **Get the installer.** On GitHub open *Actions → Windows build → Run workflow* (or push a tag like `v0.4.0`), wait for it to finish, and download `Monotion-Setup.exe` from the run's *Artifacts* (a tag also attaches it to the release).
+2. **Install.** Double-click `Monotion-Setup.exe`. It installs for your user only, so no admin rights are needed. If SmartScreen says *Windows protected your PC*, click *More info → Run anyway* (the installer isn't code-signed).
+3. **Start.** Launch *Monotion* from the Start menu or the desktop shortcut. A window opens; on first launch click **Sign up** and create your account. Your data stays on this PC.
+4. **Uninstall** from *Settings → Apps*. Your data in `%APPDATA%\Monotion` is kept; delete that folder to remove it too.
+
+### Build it yourself
+
+Without GitHub Actions, on a Windows PC with Python 3.11+ and Node 20+ on the `PATH` (and optionally [Inno Setup](https://jrsoftware.org/isinfo.php) for the installer):
+
+```bat
+git clone https://github.com/Mohammed0Saeed/Monotion.git
+cd Monotion
+git checkout windows-desktop
+desktop\build.bat
+```
+
+`desktop\build.bat` builds the frontend and the app. Run `dist\Monotion\Monotion.exe`, or install `dist\Monotion-Setup.exe` if Inno Setup was found.
+
+### Run from source (development)
+
+```bat
+cd frontend
+npm install
+npm run build
+cd ..
+python -m venv desktop\.venv
+desktop\.venv\Scripts\activate
+pip install -r desktop\requirements.txt
+python desktop\app.py
+```
+
+The app serves on `127.0.0.1:48731` only (another free port if that one is taken, but then the login and theme, kept per port, start fresh). Its log is `%APPDATA%\Monotion\monotion.log`. Create your account on first launch; the sign-up and login screen work as in the browser. The `.md`/zip exports open a *Save as* dialog, and *Save as PDF* uses the Windows print dialog. The installer isn't code-signed, so SmartScreen may warn the first time. Data from a Postgres server isn't imported automatically.
+
+The same backend runs on both databases: SQLite for the desktop app, Postgres for the server setup (`DATABASE_URL`). The upgrade statements in `main.py` run on Postgres only; a new SQLite file is created with the current schema.
+
 ## Using Monotion
 
 - **Tabs**: *University*, *Side Projects*, *Personal*, *IP2* and *Journal* in the top bar. University switches between *Tasks*, *Notes* and *Grades* under the top bar.

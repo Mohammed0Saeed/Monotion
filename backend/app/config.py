@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-change-me"
     allow_registration: bool = True
     token_days: int = 30
+    # the desktop build bundles the UI somewhere else than the source tree
+    frontend_dist: Path = ROOT / "frontend" / "dist"
 
 
 settings = Settings()

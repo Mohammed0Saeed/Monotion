@@ -4,3 +4,6 @@ node_modules/
 .env
 frontend/dist/
 .idea/
+dist/
+build/
+desktop/.venv/
