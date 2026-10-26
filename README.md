@@ -53,42 +53,23 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 ## Windows app
 
-Monotion also ships as a standalone Windows 10/11 app: the same web UI in its own window, with the server built in. There is no Docker, Postgres, Python or Node to install, and the data is a SQLite file in `%APPDATA%\Monotion\monotion.db`. It uses the WebView2 runtime that comes with Windows 11.
+Monotion also runs as a standalone Windows 10/11 app: the same web UI in its own window, with the server built in. Everything is local: there is no Docker, Postgres or cloud service, and the data is a SQLite file in `%APPDATA%\Monotion\monotion.db`. It uses the WebView2 runtime that comes with Windows 11.
 
-### Install and run
+You need [Python 3.11+](https://www.python.org/downloads/) and [Node 20+](https://nodejs.org/) on the PC once, to build it; the finished app needs neither.
 
-1. **Get the installer.** On GitHub open *Actions → Windows build → Run workflow* (or push a tag like `v0.4.0`), wait for it to finish, and download `Monotion-Setup.exe` from the run's *Artifacts* (a tag also attaches it to the release).
-2. **Install.** Double-click `Monotion-Setup.exe`. It installs for your user only, so no admin rights are needed. If SmartScreen says *Windows protected your PC*, click *More info → Run anyway* (the installer isn't code-signed).
-3. **Start.** Launch *Monotion* from the Start menu or the desktop shortcut. A window opens; on first launch click **Sign up** and create your account. Your data stays on this PC.
-4. **Uninstall** from *Settings → Apps*. Your data in `%APPDATA%\Monotion` is kept; delete that folder to remove it too.
+### Run it
 
-### Build it yourself
+1. Copy the Monotion folder to the Windows PC.
+2. Double-click `desktop\run.bat`. The first run installs the dependencies and builds the UI (a few minutes); after that it opens right away.
+3. On first launch click **Sign up** and create your account. It stays on this PC.
 
-Without GitHub Actions, on a Windows PC with Python 3.11+ and Node 20+ on the `PATH` (and optionally [Inno Setup](https://jrsoftware.org/isinfo.php) for the installer):
+### Make a standalone .exe
 
-```bat
-git clone https://github.com/Mohammed0Saeed/Monotion.git
-cd Monotion
-git checkout windows-desktop
-desktop\build.bat
-```
+Double-click `desktop\build.bat`. It builds the UI and packs the app into `dist\Monotion\Monotion.exe`, which you can move or pin anywhere and run without Python or Node. If [Inno Setup](https://jrsoftware.org/isinfo.php) is installed it also writes `dist\Monotion-Setup.exe`, an installer with a Start menu entry and an uninstaller (no admin rights needed). The `.exe` isn't code-signed, so SmartScreen may say *Windows protected your PC*: click *More info → Run anyway*.
 
-`desktop\build.bat` builds the frontend and the app. Run `dist\Monotion\Monotion.exe`, or install `dist\Monotion-Setup.exe` if Inno Setup was found.
+To uninstall, delete the folder (or use *Settings → Apps* if you used the installer). Your data in `%APPDATA%\Monotion` stays until you delete that folder.
 
-### Run from source (development)
-
-```bat
-cd frontend
-npm install
-npm run build
-cd ..
-python -m venv desktop\.venv
-desktop\.venv\Scripts\activate
-pip install -r desktop\requirements.txt
-python desktop\app.py
-```
-
-The app serves on `127.0.0.1:48731` only (another free port if that one is taken, but then the login and theme, kept per port, start fresh). Its log is `%APPDATA%\Monotion\monotion.log`. Create your account on first launch; the sign-up and login screen work as in the browser. The `.md`/zip exports open a *Save as* dialog, and *Save as PDF* uses the Windows print dialog. The installer isn't code-signed, so SmartScreen may warn the first time. Data from a Postgres server isn't imported automatically.
+The app serves on `127.0.0.1:48731` only (another free port if that one is taken, but then the login and theme, kept per port, start fresh). Its log is `%APPDATA%\Monotion\monotion.log`. Create your account on first launch; the sign-up and login screen work as in the browser. The `.md`/zip exports open a *Save as* dialog, and *Save as PDF* uses the Windows print dialog. Data from a Postgres server isn't imported automatically.
 
 The same backend runs on both databases: SQLite for the desktop app, Postgres for the server setup (`DATABASE_URL`). The upgrade statements in `main.py` run on Postgres only; a new SQLite file is created with the current schema.
 
