@@ -55,7 +55,11 @@ For other devices on your network, use this machine's LAN IP instead of `127.0.0
 
 Monotion also runs as a standalone Windows 10/11 app: the same web UI in its own window, with the server built in. Everything is local: there is no Docker, Postgres or cloud service, and the data is a SQLite file in `%APPDATA%\Monotion\monotion.db`. It uses the WebView2 runtime that comes with Windows 11.
 
-You need [Python 3.11+](https://www.python.org/downloads/) and [Node 20+](https://nodejs.org/) on the PC once, to build it; the finished app needs neither.
+To build it yourself you need [Python 3.11+](https://www.python.org/downloads/) and [Node 20+](https://nodejs.org/) on the PC once; the finished app needs neither.
+
+### Download
+
+Get **Monotion-windows.zip** from the [Releases page](https://github.com/Mohammed0Saeed/Monotion/releases), extract it, and double-click `Monotion\Monotion.exe`. Nothing else to install. Pushing a tag like `v0.4.0` builds a new release on GitHub (`.github/workflows/release.yml`); a tag with a dash, like `v0.4.0-beta.1`, is marked as a pre-release.
 
 ### Run it
 

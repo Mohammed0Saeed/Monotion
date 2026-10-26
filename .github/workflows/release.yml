@@ -1,0 +1,50 @@
+# Builds the Windows app on GitHub's Windows runner (PyInstaller can't cross-compile) and publishes it as a
+# release zip. Runs when a v* tag is pushed; a tag with a dash (v0.4.0-beta.1) becomes a pre-release.
+name: Windows release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build the UI
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Build the app
+        run: |
+          python -m pip install -r desktop/requirements.txt
+          pyinstaller desktop/monotion.spec --noconfirm --distpath dist --workpath build
+      - name: Zip it
+        run: Compress-Archive -Path dist/Monotion -DestinationPath dist/Monotion-windows.zip
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $flags = @()
+          if ($env:TAG.Contains("-")) { $flags += "--prerelease" }
+          gh release create $env:TAG dist/Monotion-windows.zip --title "Monotion $env:TAG" @flags --notes @"
+          Monotion for Windows 10/11, fully local: your data stays on your PC.
+
+          1. Download **Monotion-windows.zip** below and extract it.
+          2. Open the **Monotion** folder and double-click **Monotion.exe**.
+          3. On first launch click **Sign up** and create your account.
+
+          Windows SmartScreen may say *Windows protected your PC* because the app isn't code-signed: click *More info*, then *Run anyway*.
+          Data is stored in ``%APPDATA%\Monotion``.
+          "@
