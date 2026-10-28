@@ -15,6 +15,7 @@ import IP2 from './IP2'
 import Profile from './Profile'
 import Archive from './Archive'
 import Grades from './Grades'
+import Deadlines from './Deadlines'
 import { resolveTheme, useTheme } from './theme'
 import type { ArchiveSection, GroupData, Kind, Profile as ProfileData, Semester, Task } from './types'
 
@@ -118,7 +119,12 @@ function Board({ kind, semester }: { kind: Kind; semester?: Semester }) {
       {groups.length % columnCount === c && addTile}
     </div>
   ))
-  return <div className="board" style={{ '--cols': columnCount } as CSSProperties}>{columns}</div>
+  return (
+    <>
+      {isSubject && <Deadlines subjects={groups} />}
+      <div className="board" style={{ '--cols': columnCount } as CSSProperties}>{columns}</div>
+    </>
+  )
 }
 
 function University() {

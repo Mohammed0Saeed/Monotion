@@ -4,7 +4,6 @@ import {
 } from 'react'
 import { ArrowLeft, Code, Download, Eye, FileDown, FileText, Link2, PenLine, Plus, Trash2 } from 'lucide-react'
 import { api } from './api'
-import Deadlines from './Deadlines'
 import { headingClass } from './headings'
 import { renderMarkdown, type RefLookup } from './markdown'
 import { useSlidingPill } from './Segmented'
@@ -448,23 +447,16 @@ export default function Notes({ semester, onSemester, onTasks }: {
     setSelected(null)
   }
 
-  const deadlines = <Deadlines subjects={index.subjects} semesterId={semester.id} />
-
   if (!subjects.length) {
     return (
-      <>
-        {deadlines}
-        <div className="empty">
-          <p>Notes belong to a lecture. Add the lectures of {semester.name} in Tasks first.</p>
-          <button className="btn-primary" onClick={onTasks}>Go to Tasks</button>
-        </div>
-      </>
+      <div className="empty">
+        <p>Notes belong to a lecture. Add the lectures of {semester.name} in Tasks first.</p>
+        <button className="btn-primary" onClick={onTasks}>Go to Tasks</button>
+      </div>
     )
   }
 
   return (
-    <>
-    {deadlines}
     <div className="journal notes" data-view={current ? 'editor' : 'list'}>
       <aside className="journal-list">
         <div className="journal-head"><h1>Notes</h1></div>
@@ -515,6 +507,5 @@ export default function Notes({ semester, onSemester, onTasks }: {
         </div>
       )}
     </div>
-    </>
   )
 }

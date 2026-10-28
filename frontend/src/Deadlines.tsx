@@ -2,11 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { CalendarClock, ChevronRight, Eye, EyeOff, Plus, Repeat, Trash2, X } from 'lucide-react'
 import { api } from './api'
 import { Check } from './Group'
-import type { Deadline, DeadlineRepeat, NoteSubject } from './types'
+import type { Deadline, DeadlineRepeat } from './types'
 
 /** a deadline just ticked off stays long enough to show the check, then slides out (see .finishing in styles.css) */
 const FINISH_MS = 900
 const MAX_REPEATS = 100
+
+/** what a deadline needs to know about a lecture */
+type Lecture = { id: number; name: string; color: string }
 
 const REPEATS: { id: DeadlineRepeat; label: string; unit: string }[] = [
   { id: 'none', label: 'Once', unit: '' },
@@ -32,7 +35,7 @@ function whenLabel(d: string) {
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err))
 
 function AddForm({ subjects, onAdd, onClose }: {
-  subjects: NoteSubject[]
+  subjects: Lecture[]
   onAdd: (title: string, date: string, subjectId: number | undefined, repeat: DeadlineRepeat, count: number) => Promise<void>
   onClose: () => void
 }) {
@@ -85,7 +88,7 @@ function AddForm({ subjects, onAdd, onClose }: {
 
 function Row({ item, subject, showDate, series, finishing, onDone, onRemove }: {
   item: Deadline
-  subject: NoteSubject | undefined
+  subject: Lecture | undefined
   showDate: boolean
   series: number          // occurrences of this deadline's repeat still in the list
   finishing: boolean
@@ -124,8 +127,8 @@ function Row({ item, subject, showDate, series, finishing, onDone, onRemove }: {
   )
 }
 
-/** Deadlines of every lecture, soonest first, above the notes. Done ones are hidden until asked for. */
-export default function Deadlines({ subjects, semesterId }: { subjects: NoteSubject[]; semesterId: number }) {
+/** Deadlines of every lecture, soonest first, above the task cards. Done ones are hidden until asked for. */
+export default function Deadlines({ subjects }: { subjects: Lecture[] }) {
   const [items, setItems] = useState<Deadline[] | null>(null)
   const [open, setOpen] = useState(() => localStorage.getItem('maki_deadlines') !== 'closed')
   const [adding, setAdding] = useState(false)
@@ -189,7 +192,7 @@ export default function Deadlines({ subjects, semesterId }: { subjects: NoteSubj
         </header>
         {open && (
           <div className="dl-body">
-            {adding && <AddForm subjects={subjects.filter(s => s.semester_id === semesterId)} onAdd={add} onClose={() => setAdding(false)} />}
+            {adding && <AddForm subjects={subjects} onAdd={add} onClose={() => setAdding(false)} />}
             {!shown.length && !adding && <p className="muted small dl-empty">No deadlines. Add one, and let it repeat if it comes back every week.</p>}
             <div className="dl-list">
               {shown.map((d, i) => (

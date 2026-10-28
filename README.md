@@ -2,7 +2,7 @@
 
 A local, self-hosted task manager and lecture notebook with a Notion-dark look — but with **tasks**, not pages.
 
-- **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), lecture notes with LaTeX, and exam grades with a German GPA. Above the notes sits a **Deadlines** window, soonest first with overdue ones in red; a deadline can repeat (every day, week, 2 weeks or month, for N times) and each repeat is ticked off or deleted on its own
+- **University** — semesters → subjects → tasks → sub-tasks (unlimited nesting), lecture notes with LaTeX, and exam grades with a German GPA. Above the task cards sits a **Deadlines** window, soonest first with overdue ones in red; a deadline can repeat (every day, week, 2 weeks or month, for N times) and each repeat is ticked off or deleted on its own
 - **Side Projects** — projects → tasks → sub-tasks
 - **Personal** — lists (e.g. *Errands*, *Home*) → tasks → sub-tasks
 - **IP2** — the IP robotics project board: *Data collection*, *Training* and *Evaluation* columns whose tasks are open, in progress or done
