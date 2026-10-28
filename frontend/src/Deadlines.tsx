@@ -86,10 +86,9 @@ function AddForm({ subjects, onAdd, onClose }: {
   )
 }
 
-function Row({ item, subject, showDate, series, finishing, onDone, onRemove }: {
+function Row({ item, subject, series, finishing, onDone, onRemove }: {
   item: Deadline
   subject: Lecture | undefined
-  showDate: boolean
   series: number          // occurrences of this deadline's repeat still in the list
   finishing: boolean
   onDone: (done: boolean) => void
@@ -99,35 +98,37 @@ function Row({ item, subject, showDate, series, finishing, onDone, onRemove }: {
   return (
     <div className={'dl-node' + (finishing ? ' finishing' : '')}>
       <div className="dl-clip">
-        <div className={'dl-row' + (item.done ? ' done' : '') + (late ? ' late' : '')}>
-          <span className="dl-date">{showDate ? dateLabel(item.due_date) : ''}</span>
-          <Check checked={item.done} label={item.title} onChange={onDone} />
-          <span className="dl-title">{item.title}</span>
-          <span className="dl-meta">
-            <span className={'dl-subject' + (subject ? ` c-${subject.color}` : '')}>
-              {subject && <><i className="chip-dot" />{subject.name}</>}
+        <div className={'dl-block' + (item.done ? ' done' : '') + (late ? ' late' : '') + (subject ? ` c-${subject.color}` : '')}>
+          <div className="dl-top">
+            <span className="dl-date">{dateLabel(item.due_date)}</span>
+            <span className="dl-actions">
+              {series > 1 && (
+                <button className="danger" title={`Delete all ${series} repeats`} aria-label={`Delete all ${series} repeats of ${item.title}`}
+                        onClick={() => confirm(`Delete all ${series} repeats of "${item.title}"?`) && onRemove(true)}>
+                  <Trash2 size={14} />
+                </button>
+              )}
+              <button className="danger" title="Delete" aria-label={`Delete ${item.title}`} onClick={() => onRemove(false)}><X size={15} /></button>
             </span>
-            <span className="dl-series" title={item.series_id ? `Repeat ${item.occurrence} of ${item.series_total}` : undefined}>
-              {item.series_id && <><Repeat size={12} />{item.occurrence}/{item.series_total}</>}
-            </span>
-            <span className="dl-when">{item.done ? '' : whenLabel(item.due_date)}</span>
-          </span>
-          <span className="dl-actions">
-            {series > 1 && (
-              <button className="danger" title={`Delete all ${series} repeats`} aria-label={`Delete all ${series} repeats of ${item.title}`}
-                      onClick={() => confirm(`Delete all ${series} repeats of "${item.title}"?`) && onRemove(true)}>
-                <Trash2 size={14} />
-              </button>
+          </div>
+          <div className="dl-main">
+            <Check checked={item.done} label={item.title} onChange={onDone} />
+            <span className="dl-title" title={item.title}>{item.title}</span>
+          </div>
+          <div className="dl-meta">
+            {subject && <span className="dl-subject"><i className="chip-dot" />{subject.name}</span>}
+            {item.series_id && (
+              <span className="dl-series" title={`Repeat ${item.occurrence} of ${item.series_total}`}><Repeat size={12} />{item.occurrence}/{item.series_total}</span>
             )}
-            <button className="danger" title="Delete" aria-label={`Delete ${item.title}`} onClick={() => onRemove(false)}><X size={15} /></button>
-          </span>
+            {!item.done && <span className="dl-when">{whenLabel(item.due_date)}</span>}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-/** Deadlines of every lecture, soonest first, above the task cards. Done ones are hidden until asked for. */
+/** Deadlines of every lecture, soonest first as blocks in one row, above the task cards. Done ones are hidden until asked for. */
 export default function Deadlines({ subjects }: { subjects: Lecture[] }) {
   const [items, setItems] = useState<Deadline[] | null>(null)
   const [open, setOpen] = useState(() => localStorage.getItem('maki_deadlines') !== 'closed')
@@ -195,9 +196,9 @@ export default function Deadlines({ subjects }: { subjects: Lecture[] }) {
             {adding && <AddForm subjects={subjects} onAdd={add} onClose={() => setAdding(false)} />}
             {!shown.length && !adding && <p className="muted small dl-empty">No deadlines. Add one, and let it repeat if it comes back every week.</p>}
             <div className="dl-list">
-              {shown.map((d, i) => (
+              {shown.map(d => (
                 <Row key={d.id} item={d} subject={d.subject_id !== null ? subjectOf.get(d.subject_id) : undefined}
-                     showDate={shown[i - 1]?.due_date !== d.due_date} series={seriesSize(d)}
+                     series={seriesSize(d)}
                      finishing={d.done && finishing.has(d.id)}
                      onDone={done => void setDone(d, done)} onRemove={series => void remove(d, series)} />
               ))}

@@ -604,54 +604,57 @@ select.gfield { cursor: pointer; }
 .dl-chevron { color: var(--muted); transition: transform .2s var(--ease-out); }
 .dl-toggle[aria-expanded="true"] .dl-chevron { transform: rotate(90deg); }
 .dl-overdue { color: var(--danger-ink); }
-.dl-body { border-top: 1px solid var(--line); padding: 6px 6px 8px; max-height: min(30dvh, 260px); overflow-y: auto; overscroll-behavior: contain; animation: fade-in .2s both; }
+.dl-body { border-top: 1px solid var(--line); padding: 10px 10px 8px; animation: fade-in .2s both; }
 .dl-empty { margin: 8px 10px; }
 
-.dl-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 6px 10px; }
+.dl-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 0 12px; }
 .dl-form .dl-title { flex: 1 1 220px; font-size: 13px; padding: 6px 10px; background: var(--field); }
 .dl-count { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-stretch: var(--narrow); color: var(--muted); }
 .dl-count .date-input { width: 66px; }
 .dl-form-actions { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 .dl-form-actions .btn-primary { padding: 6px 14px; font-size: 13px; }
 
-.dl-node { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .18s var(--ease-out), opacity .15s, transform .18s; }
-.dl-clip { min-height: 0; overflow: hidden; }
-.dl-node.finishing { grid-template-rows: 0fr; opacity: 0; transform: translateX(-8px); transition-delay: .55s; }
-.dl-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; transition: background-color .12s; }
-.dl-date { flex: none; width: 92px; font-size: 12px; font-weight: 600; font-stretch: var(--narrow); color: var(--muted); }
-.dl-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-stretch: var(--narrow); }
-.dl-meta { display: contents; } /* on phones the three sit on a line of their own under the title */
-.dl-subject, .dl-series, .dl-when { flex: none; font-size: 12px; font-stretch: var(--narrow); color: var(--muted); white-space: nowrap; }
-.dl-subject { display: inline-flex; align-items: center; gap: 6px; width: 150px; overflow: hidden; text-overflow: ellipsis; }
-.dl-series { display: inline-flex; align-items: center; gap: 3px; width: 46px; font-variant-numeric: tabular-nums; }
-.dl-when { width: 112px; text-align: right; }
-.dl-row.late .dl-date, .dl-row.late .dl-when { color: var(--danger-ink); }
-.dl-row.done .dl-title { color: rgb(var(--fg) / .42); text-decoration: line-through; }
-.dl-actions { display: flex; justify-content: flex-end; gap: 3px; width: 51px; flex: none; } /* room for both buttons, so the columns line up */
+/* one row of blocks, soonest on the left; when the first is ticked off it slides out and the rest move up */
+.dl-list { display: flex; align-items: stretch; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding-bottom: 4px; }
+.dl-node { flex: none; width: 216px; scroll-snap-align: start; transition: width .3s var(--ease-out), opacity .2s, transform .3s var(--ease-out); }
+.dl-clip { height: 100%; overflow: hidden; padding-right: 8px; }
+.dl-node.finishing { width: 0; opacity: 0; transform: translateX(-24px); transition-delay: .55s; }
+.dl-block {
+  --ac: rgb(var(--fg) / .3);
+  position: relative; height: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 10px 14px;
+  border-radius: 10px; background: var(--card); transition: background-color .15s;
+}
+.dl-block::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--ac); }
+.dl-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 24px; }
+.dl-date { font-size: 12px; font-weight: 600; font-stretch: var(--narrow); color: var(--muted); white-space: nowrap; }
+.dl-main { display: flex; align-items: flex-start; gap: 10px; flex: 1; }
+.dl-main .check { margin-top: 1px; }
+.dl-title { flex: 1; min-width: 0; overflow-wrap: anywhere; font-stretch: var(--narrow); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 16px; }
+.dl-subject, .dl-series, .dl-when { font-size: 12px; font-stretch: var(--narrow); color: var(--muted); white-space: nowrap; }
+.dl-subject { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.dl-series { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+.dl-when { margin-left: auto; }
+.dl-block.late .dl-date, .dl-block.late .dl-when { color: var(--danger-ink); }
+.dl-block.done .dl-title { color: rgb(var(--fg) / .42); text-decoration: line-through; }
+.dl-actions { display: flex; gap: 2px; }
 .dl-actions button {
   display: grid; place-items: center; width: 24px; height: 24px; border-radius: 5px; opacity: 0;
   transition: opacity .12s, background-color .15s, color .15s;
 }
-.dl-row:focus-within .dl-actions button { opacity: 1; }
+.dl-block:focus-within .dl-actions button { opacity: 1; }
 .deadlines-error { max-width: 1400px; margin: 12px auto 0; padding: 0 24px; }
 @media (hover: hover) {
   .dl-toggle:hover { background: rgb(var(--fg) / .06); }
-  .dl-row:hover { background: rgb(var(--fg) / .06); }
-  .dl-row:hover .dl-actions button { opacity: 1; }
+  .dl-block:hover { background: rgb(var(--fg) / .07); }
+  .dl-block:hover .dl-actions button { opacity: 1; }
 }
 @media (pointer: coarse) {
-  .dl-row { min-height: 44px; }
   .dl-actions button { opacity: 1; width: 34px; height: 34px; }
 }
 @media (max-width: 759px) {
   .deadlines { padding: 12px 12px 0; }
-  .dl-row { flex-wrap: wrap; row-gap: 2px; }
-  .dl-date { width: auto; flex-basis: 100%; }
-  .dl-date:empty { display: none; }
-  .dl-meta { order: 5; flex-basis: 100%; display: flex; align-items: center; gap: 12px; padding-left: 32px; }
-  .dl-subject, .dl-series { width: auto; max-width: 55%; }
-  .dl-subject:empty, .dl-series:empty { display: none; }
-  .dl-when { width: auto; margin-left: auto; }
+  .dl-node { width: 196px; }
   .dl-form-actions { margin-left: 0; }
 }
 
