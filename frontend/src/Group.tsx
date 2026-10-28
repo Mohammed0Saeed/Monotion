@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { ChevronRight, Plus, Trash2, X } from 'lucide-react'
+import { ChevronRight, Eye, EyeOff, Plus, Trash2, X } from 'lucide-react'
 import InlineInput from './InlineInput'
 import type { GroupData, GroupPatch, Kind, Task, TaskCreate, TaskPatch } from './types'
 
@@ -9,6 +9,8 @@ export const COLORS = ['red', 'blue', 'yellow', 'green', 'orange', 'brown', 'pur
 export const NOUN: Record<Kind, string> = { subject: 'subject', project: 'project', personal: 'list' }
 
 const LEAVE_MS = 180
+/** a task just ticked off stays long enough to show the check, then slides out (see .finishing in styles.css) */
+const FINISH_MS = 900
 
 type Tree = Record<number, Task[]>
 
@@ -49,7 +51,9 @@ export function Check({ checked, onChange, label, disabled }: {
   )
 }
 
-function TaskRow({ task, byParent, depth, actions }: { task: Task; byParent: Tree; depth: number; actions: TaskActions }) {
+function TaskRow({ task, byParent, depth, actions, finishing }: {
+  task: Task; byParent: Tree; depth: number; actions: TaskActions; finishing: Set<number>
+}) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState(false)
   const [leaving, setLeaving] = useState(false)
@@ -63,7 +67,7 @@ function TaskRow({ task, byParent, depth, actions }: { task: Task; byParent: Tre
   }
 
   return (
-    <div className={'task-node' + (leaving ? ' leaving' : '')}>
+    <div className={'task-node' + (leaving ? ' leaving' : '') + (task.done && finishing.has(task.id) ? ' finishing' : '')}>
       <div className="node-inner">
         <div className={'task' + (task.done ? ' done' : '')} style={{ '--depth': depth } as CSSProperties}>
           {hasKids ? (
@@ -94,7 +98,7 @@ function TaskRow({ task, byParent, depth, actions }: { task: Task; byParent: Tre
         {hasKids && (
           <div className={'kids' + (open ? ' open' : '')}>
             <div className="kids-inner">
-              {kids.map(k => <TaskRow key={k.id} task={k} byParent={byParent} depth={depth + 1} actions={actions} />)}
+              {kids.map(k => <TaskRow key={k.id} task={k} byParent={byParent} depth={depth + 1} actions={actions} finishing={finishing} />)}
               {adding && (
                 <div className="task adding" style={{ '--depth': depth + 1 } as CSSProperties}>
                   <InlineInput placeholder="Sub-task title" keepOpen onClose={() => setAdding(false)}
@@ -123,13 +127,25 @@ export default function Group({ group, actions, kind, index }: {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState(false)
   const [menu, setMenu] = useState(false)
-  const byParent = buildTree(group.tasks)
+  const [showDone, setShowDone] = useState(false)
+  const [finishing, setFinishing] = useState<Set<number>>(new Set()) // just ticked: still on screen, on their way out
   const total = group.tasks.length
   const done = group.tasks.filter(t => t.done).length
+  // done tasks are out of sight (until "Show completed"), and a done task takes its sub-tasks with it
+  const byParent = buildTree(showDone ? group.tasks : group.tasks.filter(t => !t.done || finishing.has(t.id)))
   const rootKey = kind === 'subject' ? 'subject_id' : 'project_id'
 
+  function finish(id: number) {
+    const ids = subtree(group.tasks, id)
+    setFinishing(f => new Set([...f, ...ids]))
+    setTimeout(() => setFinishing(f => new Set([...f].filter(x => !ids.has(x)))), FINISH_MS)
+  }
+
   const taskActions: TaskActions = {
-    update: (id, patch) => void actions.updateTask(id, patch),
+    update: (id, patch) => {
+      if (patch.done && !showDone) finish(id)
+      void actions.updateTask(id, patch)
+    },
     remove: id => void actions.removeTask(id),
     add: body => void actions.addTask(group.id, body),
   }
@@ -162,7 +178,7 @@ export default function Group({ group, actions, kind, index }: {
         </div>
       )}
       <div className="tasks">
-        {(byParent[0] ?? []).map(t => <TaskRow key={t.id} task={t} byParent={byParent} depth={0} actions={taskActions} />)}
+        {(byParent[0] ?? []).map(t => <TaskRow key={t.id} task={t} byParent={byParent} depth={0} actions={taskActions} finishing={finishing} />)}
         {adding && (
           <div className="task adding" style={{ '--depth': 0 } as CSSProperties}>
             <InlineInput placeholder="Task title" keepOpen onClose={() => setAdding(false)}
@@ -170,6 +186,11 @@ export default function Group({ group, actions, kind, index }: {
           </div>
         )}
         <button className="add-row" onClick={() => setAdding(true)}><Plus size={15} /> New task</button>
+        {done > 0 && (
+          <button className="add-row show-done" aria-pressed={showDone} onClick={() => setShowDone(!showDone)}>
+            {showDone ? <EyeOff size={15} /> : <Eye size={15} />} {showDone ? 'Hide completed' : `Show ${done} completed`}
+          </button>
+        )}
       </div>
       {total > 0 && (
         <div className={'rail' + (done === total ? ' complete' : '')} aria-hidden="true">

@@ -1,5 +1,5 @@
 import type {
-  ArchiveGroup, Grade, GradePatch, GroupData, GroupPatch, IP2Patch, IP2Stage, IP2Task, JournalEntry, JournalPatch, Note, NotePatch, NotesIndex, Profile, ProjectKind, Semester, Task,
+  ArchiveGroup, Deadline, DeadlineCreate, Grade, GradePatch, GroupData, GroupPatch, IP2Patch, IP2Stage, IP2Task, JournalEntry, JournalPatch, Note, NotePatch, NotesIndex, Profile, ProjectKind, Semester, Task,
   TaskCreate, TaskPatch, TokenResponse,
 } from './types'
 
@@ -85,6 +85,12 @@ export const api = {
   addGrade: (subject_id: number) => request<Grade>('POST', '/grades', { subject_id }),
   updateGrade: (id: number, patch: GradePatch) => request<Grade>('PATCH', `/grades/${id}`, patch),
   deleteGrade: (id: number) => request('DELETE', `/grades/${id}`),
+
+  deadlines: () => request<Deadline[]>('GET', '/deadlines'),
+  addDeadline: (body: DeadlineCreate) => request<Deadline[]>('POST', '/deadlines', body),
+  updateDeadline: (id: number, patch: Partial<Pick<Deadline, 'title' | 'due_date' | 'done'>>) =>
+    request<Deadline>('PATCH', `/deadlines/${id}`, patch),
+  deleteDeadline: (id: number, series = false) => request('DELETE', `/deadlines/${id}${series ? '?series=true' : ''}`),
 
   ip2: () => request<IP2Task[]>('GET', '/ip2'),
   addIP2: (stage: IP2Stage, title: string) => request<IP2Task>('POST', '/ip2', { stage, title }),

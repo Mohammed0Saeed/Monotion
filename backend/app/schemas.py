@@ -78,6 +78,35 @@ class GroupOut(ORM):
     tasks: list[TaskOut]
 
 
+DeadlineRepeat = Literal["none", "daily", "weekly", "biweekly", "monthly"]
+MAX_REPEATS = 100
+
+
+class DeadlineCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    due_date: date
+    subject_id: int | None = None
+    repeat: DeadlineRepeat = "none"
+    count: int = Field(default=1, ge=1, le=MAX_REPEATS)  # occurrences in all, the first included
+
+
+class DeadlinePatch(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    due_date: date | None = None
+    done: bool | None = None
+
+
+class DeadlineOut(ORM):
+    id: int
+    subject_id: int | None
+    title: str
+    due_date: date
+    done: bool
+    series_id: str | None
+    occurrence: int
+    series_total: int
+
+
 ArchiveSection = Literal["university", "project", "personal"]
 
 

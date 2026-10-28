@@ -106,6 +106,27 @@ export interface NotesIndex {
 
 export type NotePatch = Partial<Pick<Note, 'subject_id' | 'note_date' | 'title' | 'body'>>
 
+export type DeadlineRepeat = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
+
+export interface Deadline {
+  id: number
+  subject_id: number | null
+  title: string
+  due_date: string
+  done: boolean
+  series_id: string | null   // shared by the occurrences of one repeat
+  occurrence: number         // 1-based position in the series
+  series_total: number
+}
+
+export interface DeadlineCreate {
+  title: string
+  due_date: string
+  subject_id?: number
+  repeat: DeadlineRepeat
+  count: number              // occurrences in all, the first included
+}
+
 export type IP2Stage = 'data' | 'training' | 'evaluation'
 export type IP2Status = 'open' | 'progress' | 'done'
 
